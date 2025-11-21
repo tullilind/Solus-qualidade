@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Dashboard Qualidade</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        .chart-bar { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT (Motor ADM) -->
+    <div class="flex h-screen w-full">
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- CONTEÚDO -->
+            <div class="p-6 lg:p-10 max-w-7xl mx-auto w-full pb-24" id="main-content">
+                
+                <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 class="text-bioteste-text-heading text-3xl font-black tracking-tight">Controle de Qualidade (NPS)</h1>
+                        <p class="text-bioteste-text-body mt-1">Comparativo entre volume de atendimentos e retorno das pesquisas de satisfação.</p>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                        <p class="text-xs text-gray-400 font-mono" id="data-atual">--/--/----</p>
+                        <!-- Status Clicável para recarregar -->
+                        <button onclick="carregarDadosCruzados()" id="status-api" class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200 mt-1 hover:bg-gray-200 transition-colors flex items-center gap-1 cursor-pointer">
+                            <span class="material-symbols-outlined text-[10px]">sync</span> Aguardando...
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPIs Gerais -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <!-- Card 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="material-symbols-outlined text-bioteste-primary bg-blue-50 p-2 rounded-lg">groups</span>
+                            <span class="text-xs font-bold text-gray-400 uppercase">Total Atendimentos</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800" id="kpi-atendimentos">0</h3>
+                        <p class="text-xs text-gray-400 mt-1">Base Geral</p>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="material-symbols-outlined text-green-600 bg-green-50 p-2 rounded-lg">assignment_turned_in</span>
+                            <span class="text-xs font-bold text-gray-400 uppercase">Pesquisas Recebidas</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800" id="kpi-pesquisas">0</h3>
+                        <p class="text-xs text-gray-400 mt-1">Feedback Clientes</p>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="material-symbols-outlined text-purple-600 bg-purple-50 p-2 rounded-lg">percent</span>
+                            <span class="text-xs font-bold text-gray-400 uppercase">Taxa de Retorno</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800" id="kpi-conversao">0%</h3>
+                        <p class="text-xs text-gray-400 mt-1">Eficiência da coleta</p>
+                    </div>
+
+                    <!-- Card 4 -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="material-symbols-outlined text-orange-500 bg-orange-50 p-2 rounded-lg">star</span>
+                            <span class="text-xs font-bold text-gray-400 uppercase">Satisfação Geral</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800" id="kpi-satisfacao">0%</h3>
+                        <p class="text-xs text-gray-400 mt-1">Ótimo / Bom</p>
+                    </div>
+                </div>
+
+                <!-- ÁREA DE GRÁFICOS E COMPARATIVOS -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    
+                    <!-- COMPARATIVO POR UNIDADE (2/3 da tela) -->
+                    <div class="xl:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
+                            <span class="material-symbols-outlined text-bioteste-primary">compare_arrows</span>
+                            Comparativo: Atendimentos vs. Pesquisas
+                        </h3>
+                        
+                        <!-- Legenda -->
+                        <div class="flex justify-end gap-4 mb-4 text-xs font-bold">
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-bioteste-primary rounded"></div> Atendimentos</div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-500 rounded"></div> Pesquisas</div>
+                        </div>
+
+                        <!-- Container das Barras -->
+                        <div id="lista-comparativa" class="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                            <div class="flex flex-col items-center justify-center h-40 space-y-3">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bioteste-primary"></div>
+                                <p class="text-sm text-gray-400">Carregando dados...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ULTIMAS AVALIAÇÕES (1/3 da tela) -->
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2 mb-4">
+                            <span class="material-symbols-outlined text-yellow-500">reviews</span>
+                            Feedback Recente
+                        </h3>
+                        
+                        <div id="lista-feedback" class="space-y-4 overflow-y-auto flex-1 max-h-[500px] pr-2">
+                            <p class="text-xs text-gray-400 italic text-center mt-10">Aguardando dados...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS -->
+    <script src="../art.secure.js"></script>
+    <script src="layout.adm.js"></script>
+
+    <!-- 5. LÓGICA -->
+    <script>
+        // --- APIs ---
+        const API_ATENDIMENTOS = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+        const API_PESQUISAS = "https://script.google.com/macros/s/AKfycbxgZe7BI3RcVQI_zzQ3OVwqnWWTbsuRGW7JTva_svXBUoj5e_vYnNQHbLDrQNXq42YS/exec";
+        
+        // --- Mapeamento de Chaves do JSON de Pesquisa ---
+        const KEYS = {
+            data: "Carimbo de data/hora",
+            unidade: "De qual  Unidade?", 
+            espera: "Qual é a sua avaliação sobre o tempo de espera para ser atendido?",
+            recepcao: "Em relação à cordialidade de nossa equipe de recepção, como você classificaria o atendimento? ", 
+            coleta: "Sobre a cordialidade do(a) profissional de coleta (responsável pelo seu exame), qual sua avaliação? ", 
+            clareza: "Como o(a) senhor(a) avalia a clareza das informações que lhe foram fornecidas? ", 
+            prazo: "Quanto ao prazo estipulado para a entrega do seu resultado, qual é a sua avaliação? ", 
+            sugestao: "Disponibilizamos este espaço para que você possa registrar suas valiosas sugestões e/ou críticas construtivas: ", 
+            nome: "Nome completo"
+        };
+
+        window.onload = function() {
+            if (typeof BiotesteLayoutAdm !== 'undefined') {
+                BiotesteLayoutAdm.init('dashboard');
+                initPage();
+            } else {
+                console.error("layout.adm.js falhou.");
+                initPage();
+            }
+        };
+
+        function initPage() {
+            const d = new Date();
+            const elData = document.getElementById('data-atual');
+            if (elData) elData.textContent = d.toLocaleDateString('pt-BR');
+            
+            carregarDadosCruzados();
+        }
+
+        async function carregarDadosCruzados() {
+            const statusEl = document.getElementById('status-api');
+            if(statusEl) {
+                statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px] animate-spin">refresh</span> Sincronizando...';
+                statusEl.className = "text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 cursor-wait";
+            }
+            
+            let dadosAtendimentos = [];
+            let dadosPesquisas = [];
+            let erros = [];
+
+            // 1. Busca Atendimentos (Tenta independente)
+            try {
+                const res1 = await fetch(`${API_ATENDIMENTOS}?acao=trazerTodos`);
+                const json1 = await res1.json();
+                if (json1.status === 'sucesso' && Array.isArray(json1.dados)) {
+                    dadosAtendimentos = json1.dados;
+                } else {
+                    erros.push("Atendimentos");
+                }
+            } catch (e) {
+                console.error("Erro Atendimentos:", e);
+                erros.push("Atendimentos");
+            }
+
+            // 2. Busca Pesquisas (Tenta independente)
+            try {
+                const res2 = await fetch(`${API_PESQUISAS}?action=getAll`);
+                const json2 = await res2.json();
+                if (json2.status === 'success' && Array.isArray(json2.data)) {
+                    dadosPesquisas = json2.data;
+                } else {
+                    erros.push("Pesquisas");
+                }
+            } catch (e) {
+                console.error("Erro Pesquisas:", e);
+                erros.push("Pesquisas");
+            }
+
+            // 3. Atualiza Status com base no resultado
+            if (statusEl) {
+                if (erros.length === 0) {
+                    statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px]">check_circle</span> Atualizado';
+                    statusEl.className = "text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100 cursor-pointer";
+                } else {
+                    statusEl.innerHTML = `<span class="material-symbols-outlined text-[10px]">warning</span> Falha Parcial`;
+                    statusEl.className = "text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100 cursor-pointer";
+                }
+            }
+
+            // Processa o que chegou (mesmo que parcial)
+            processarDados(dadosAtendimentos, dadosPesquisas);
+        }
+
+        function processarDados(atendimentos, pesquisas) {
+            // KPI Totais
+            const totalAtendimentos = atendimentos.length;
+            const totalPesquisas = pesquisas.length;
+            const taxaConversao = totalAtendimentos > 0 ? ((totalPesquisas / totalAtendimentos) * 100).toFixed(1) : 0;
+
+            // KPI Satisfação
+            let pontosPositivos = 0;
+            let totalPontos = 0;
+            const camposAvaliacao = [KEYS.espera, KEYS.recepcao, KEYS.coleta, KEYS.clareza, KEYS.prazo];
+
+            pesquisas.forEach(p => {
+                camposAvaliacao.forEach(campo => {
+                    if (p[campo]) {
+                        totalPontos++;
+                        const val = String(p[campo]).toLowerCase();
+                        if (val.includes('ótimo') || val.includes('bom') || val.includes('otimo')) {
+                            pontosPositivos++;
+                        }
+                    }
+                });
+            });
+
+            const satisfacao = totalPontos > 0 ? ((pontosPositivos / totalPontos) * 100).toFixed(1) : 0;
+
+            // Atualiza Cards
+            safeSetText('kpi-atendimentos', totalAtendimentos);
+            safeSetText('kpi-pesquisas', totalPesquisas);
+            safeSetText('kpi-conversao', `${taxaConversao}%`);
+            safeSetText('kpi-satisfacao', `${satisfacao}%`);
+
+            // --- AGRUPAMENTO POR UNIDADE INTELIGENTE ---
+            const mapaUnidades = {};
+
+            // 1. Processa Atendimentos (Usa normalizarUnidade)
+            atendimentos.forEach(a => {
+                // Normaliza o nome da unidade para agrupar
+                const nomeOriginal = a.unidade || 'Indefinida';
+                const nomeNormalizado = normalizarUnidade(nomeOriginal);
+                
+                if (!mapaUnidades[nomeNormalizado]) {
+                    mapaUnidades[nomeNormalizado] = { nome: nomeNormalizado, atendimentos: 0, pesquisas: 0 };
+                }
+                mapaUnidades[nomeNormalizado].atendimentos++;
+            });
+
+            // 2. Processa Pesquisas (Usa normalizarUnidade)
+            pesquisas.forEach(p => {
+                const nomeOriginal = p[KEYS.unidade] || 'Indefinida'; 
+                const nomeNormalizado = normalizarUnidade(nomeOriginal);
+                
+                if (!mapaUnidades[nomeNormalizado]) {
+                    mapaUnidades[nomeNormalizado] = { nome: nomeNormalizado, atendimentos: 0, pesquisas: 0 };
+                }
+                mapaUnidades[nomeNormalizado].pesquisas++;
+            });
+
+            renderizarComparativo(mapaUnidades);
+            renderizarFeedback(pesquisas);
+        }
+
+        function renderizarComparativo(mapa) {
+            const container = document.getElementById('lista-comparativa');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Converte para lista e ordena
+            const lista = Object.values(mapa).sort((a, b) => b.atendimentos - a.atendimentos);
+            
+            if (lista.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8 text-sm">Nenhum dado disponível.</div>';
+                return;
+            }
+
+            const maxVal = Math.max(...lista.map(i => Math.max(i.atendimentos, i.pesquisas))) || 1;
+
+            lista.forEach(item => {
+                const pctAtendimentos = (item.atendimentos / maxVal) * 100;
+                const pctPesquisas = (item.pesquisas / maxVal) * 100;
+                
+                // Evita divisão por zero
+                let taxaUnidade = 0;
+                if (item.atendimentos > 0) {
+                    taxaUnidade = ((item.pesquisas / item.atendimentos) * 100).toFixed(1);
+                } else if (item.pesquisas > 0) {
+                    // Caso raro: tem pesquisa mas não tem atendimento registrado (dados antigos?)
+                    taxaUnidade = "100+"; 
+                }
+
+                const row = document.createElement('div');
+                row.className = "fade-in";
+                row.innerHTML = `
+                    <div class="mb-2 flex justify-between items-end">
+                        <span class="font-bold text-gray-700 text-sm truncate max-w-[200px]">${item.nome}</span>
+                        <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">Retorno: ${taxaUnidade}%</span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-gray-100 rounded-r-full h-3 overflow-hidden">
+                                <div class="bg-bioteste-primary h-full rounded-r-full chart-bar relative group" style="width: ${pctAtendimentos}%">
+                                    <div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-[8px] text-white font-bold px-1">${item.atendimentos}</div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 w-8 text-right">Atend.</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-gray-100 rounded-r-full h-3 overflow-hidden">
+                                <div class="bg-green-500 h-full rounded-r-full chart-bar relative" style="width: ${pctPesquisas}%">
+                                    <div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-[8px] text-white font-bold px-1">${item.pesquisas}</div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 w-8 text-right">Pesq.</span>
+                        </div>
+                    </div>
+                    <hr class="border-gray-50 mt-4 mb-2">
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function renderizarFeedback(pesquisas) {
+            const container = document.getElementById('lista-feedback');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const comTexto = pesquisas.filter(d => d[KEYS.sugestao] && d[KEYS.sugestao].trim() !== "").reverse().slice(0, 20);
+
+            if (comTexto.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 py-8 text-sm">Nenhum feedback com texto.</div>';
+                return;
+            }
+
+            comTexto.forEach(p => {
+                const comentario = p[KEYS.sugestao];
+                const card = document.createElement('div');
+                card.className = "p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white hover:shadow-md transition-all fade-in";
+                
+                let dataStr = '--';
+                if(p[KEYS.data]) {
+                    const d = new Date(p[KEYS.data]);
+                    if(!isNaN(d)) dataStr = d.toLocaleDateString('pt-BR');
+                }
+
+                // Usa a função normalizar para mostrar o nome limpo no card também
+                const unidadeLimpa = normalizarUnidade(p[KEYS.unidade]);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-bioteste-primary truncate max-w-[150px]">${unidadeLimpa}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400">${dataStr}</span>
+                    </div>
+                    <p class="text-sm text-gray-700 italic mb-2">"${comentario}"</p>
+                    <div class="text-[10px] text-gray-500">
+                        Por: ${p[KEYS.nome] || 'Anônimo'}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- NORMALIZADOR DE UNIDADES (FILTRO INTELIGENTE) ---
+        function normalizarUnidade(txt) {
+            if (!txt) return "Indefinida";
+            const lower = txt.toString().toLowerCase().trim();
+
+            // Regras de Agrupamento Inteligente
+            if (lower.includes("jones")) return "Bioteste Jones dos Santos Neves";
+            if (lower.includes("rio novo")) return "Bioteste Rio Novo";
+            if (lower.includes("central")) return "Bioteste Central";
+            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Bioteste Jerônimo Monteiro";
+            if (lower.includes("sul")) return "Bioteste Sul"; // Caso exista unidade Sul
+            
+            // Se não cair nas regras, retorna formatado (Primeira letra maiúscula)
+            return txt.trim(); 
+        }
+
+        function safeSetText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+    </script>
+</body>
+</html>

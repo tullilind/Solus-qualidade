@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Dashboard Qualidade</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        .chart-bar { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Abas */
+        .tab-btn { transition: all 0.2s; border-bottom: 3px solid transparent; color: #6b7280; }
+        .tab-btn.active { border-bottom-color: #005A9C; color: #005A9C; font-weight: 700; background-color: #f0f9ff; }
+        
+        /* Gráfico de Pizza */
+        .pie-chart {
+            width: 180px; height: 180px; border-radius: 50%;
+            background: conic-gradient(var(--pie-gradient));
+            position: relative; transition: background 1s ease;
+        }
+        .pie-hole {
+            width: 130px; height: 130px; background: white; border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT (Motor ADM) -->
+    <div class="flex h-screen w-full">
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- CONTEÚDO -->
+            <div class="p-6 lg:p-10 max-w-7xl mx-auto w-full pb-24" id="main-content">
+                
+                <div class="mb-6 flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div>
+                        <h1 class="text-bioteste-text-heading text-3xl font-black tracking-tight">Análise de Pesquisa</h1>
+                        <p class="text-bioteste-text-body mt-1">Gestão de satisfação e feedback identificado.</p>
+                    </div>
+                    
+                    <!-- FILTROS -->
+                    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Unidade</label>
+                            <select id="filtro-unidade" onchange="aplicarFiltros()" class="text-sm py-1.5 border-gray-200 rounded-lg focus:border-bioteste-primary focus:ring-bioteste-primary min-w-[200px]">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Início</label>
+                                <input type="date" id="filtro-ini" onchange="aplicarFiltros()" class="text-sm py-1.5 border-gray-200 rounded-lg focus:border-bioteste-primary focus:ring-bioteste-primary">
+                            </div>
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fim</label>
+                                <input type="date" id="filtro-fim" onchange="aplicarFiltros()" class="text-sm py-1.5 border-gray-200 rounded-lg focus:border-bioteste-primary focus:ring-bioteste-primary">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NAVEGAÇÃO EM ABAS -->
+                <div class="flex border-b border-gray-200 mb-6 overflow-x-auto">
+                    <button onclick="mudarAba('estrategia')" id="tab-estrategia" class="tab-btn active px-6 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-lg">analytics</span>
+                        Visão Estratégica
+                    </button>
+                    <button onclick="mudarAba('voz')" id="tab-voz" class="tab-btn px-6 py-3 text-sm font-medium flex items-center gap-2 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-lg">record_voice_over</span>
+                        Voz do Cliente (Identificados)
+                        <span id="badge-voz" class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full ml-1">0</span>
+                    </button>
+                </div>
+
+                <!-- ABA 1: VISÃO ESTRATÉGICA -->
+                <div id="view-estrategia" class="fade-in">
+                    
+                    <!-- KPIs -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Total Pesquisas</p>
+                            <h3 class="text-3xl font-black text-gray-800" id="kpi-total">0</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Aprovação (Ótimo/Bom)</p>
+                            <h3 class="text-3xl font-black text-green-600" id="kpi-aprovacao">0%</h3>
+                            <div class="w-full bg-gray-100 h-1 mt-2 rounded"><div id="bar-aprovacao" class="h-full bg-green-500 rounded" style="width:0%"></div></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm md:col-span-2">
+                            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Maior Motivação</p>
+                            <h3 class="text-xl font-bold text-gray-800 truncate" id="kpi-motivacao">--</h3>
+                            <p class="text-xs text-gray-500 mt-1">Principal origem dos clientes</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        
+                        <!-- GRÁFICO DE BARRAS (Qualidade) -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 class="font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-100 pb-3">
+                                <span class="material-symbols-outlined text-bioteste-primary">bar_chart</span>
+                                Indicadores de Qualidade
+                            </h3>
+                            <div id="grafico-barras" class="space-y-6">
+                                <!-- Barras JS -->
+                            </div>
+                            <div class="mt-6 flex gap-4 justify-center text-xs text-gray-500">
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-500 rounded"></div> Positivo</div>
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-yellow-400 rounded"></div> Regular</div>
+                                <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500 rounded"></div> Negativo</div>
+                            </div>
+                        </div>
+
+                        <!-- COMPARATIVO DE VOLUME (QUANTITATIVO) -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
+                                <span class="material-symbols-outlined text-purple-600">compare_arrows</span>
+                                Comparativo de Volume (Quantitativo)
+                            </h3>
+                            <p class="text-xs text-gray-500 mb-4">Relação entre Atendimentos Realizados vs. Pesquisas Recebidas por unidade.</p>
+                            
+                            <div id="grafico-comparativo" class="space-y-4 overflow-y-auto max-h-[400px] pr-2 thin-scroll flex-1">
+                                <!-- Barras Comparativas JS -->
+                                <div class="text-center text-gray-400 py-10">Carregando dados cruzados...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de Pizza (Secundário) -->
+                    <div class="mt-8 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center gap-8">
+                        <div class="relative">
+                            <div class="pie-chart" id="grafico-pizza" style="--pie-gradient: #e2e8f0 0% 100%;">
+                                <div class="pie-hole">
+                                    <span class="text-xs text-gray-500 uppercase font-bold">Distribuição</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 w-full">
+                            <h4 class="font-bold text-gray-800 mb-4" id="titulo-pizza">Distribuição</h4>
+                            <div id="legenda-pizza" class="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                <!-- Legendas -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 2: VOZ DO CLIENTE (Identificados) -->
+                <div id="view-voz" class="hidden fade-in">
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="bg-orange-50 px-6 py-4 border-b border-orange-100">
+                            <h3 class="font-bold text-orange-800 flex items-center gap-2">
+                                <span class="material-symbols-outlined">campaign</span>
+                                Feedbacks com Identificação e Sugestões
+                            </h3>
+                            <p class="text-xs text-orange-600 mt-1">Lista filtrada contendo apenas pesquisas onde o cliente se identificou ou deixou um comentário escrito.</p>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-white text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th class="px-6 py-3 font-bold w-32">Data</th>
+                                        <th class="px-6 py-3 font-bold w-48">Unidade</th>
+                                        <th class="px-6 py-3 font-bold">Paciente / Contato</th>
+                                        <th class="px-6 py-3 font-bold">Avaliação Escrita</th>
+                                        <th class="px-6 py-3 font-bold text-right">Motivação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-voz" class="divide-y divide-gray-50 text-gray-700">
+                                    <!-- Linhas JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="empty-voz" class="hidden p-16 text-center text-gray-400 flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl mb-2 opacity-30">speaker_notes_off</span>
+                            <p>Nenhum feedback textual ou identificado encontrado neste filtro.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS -->
+    <script src="../art.secure.js"></script>
+    <script src="layout.adm.js"></script>
+
+    <!-- 5. LÓGICA -->
+    <script>
+        const API_PESQUISAS = "https://script.google.com/macros/s/AKfycbxgZe7BI3RcVQI_zzQ3OVwqnWWTbsuRGW7JTva_svXBUoj5e_vYnNQHbLDrQNXq42YS/exec";
+        const API_ATENDIMENTOS = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+
+        const K = {
+            data: "Carimbo de data/hora",
+            unidade: "De qual  Unidade?",
+            espera: "Qual é a sua avaliação sobre o tempo de espera para ser atendido?",
+            recepcao: "Em relação à cordialidade de nossa equipe de recepção, como você classificaria o atendimento? ",
+            coleta: "Sobre a cordialidade do(a) profissional de coleta (responsável pelo seu exame), qual sua avaliação? ",
+            clareza: "Como o(a) senhor(a) avalia a clareza das informações que lhe foram fornecidas? ",
+            prazo: "Quanto ao prazo estipulado para a entrega do seu resultado, qual é a sua avaliação? ",
+            sugestao: "Disponibilizamos este espaço para que você possa registrar suas valiosas sugestões e/ou críticas construtivas: ",
+            nome: "Nome completo",
+            email: "E-mail ",
+            celular: "Celular",
+            motivacao: "Gostaríamos de saber, o que o(a) motivou a procurar nossos serviços? "
+        };
+
+        let todosPesquisas = [];
+        let todosAtendimentos = [];
+
+        window.onload = function() {
+            if (typeof BiotesteLayoutAdm !== 'undefined') BiotesteLayoutAdm.init('pesquisa');
+            
+            // CORREÇÃO: Define o início do filtro para o começo do ANO atual (Janeiro), não o mês atual
+            // Isso garante que pesquisas antigas do mesmo ano apareçam
+            const hoje = new Date();
+            const inicioAno = new Date(hoje.getFullYear(), 0, 1); // Mês 0 = Janeiro
+            document.getElementById('filtro-ini').valueAsDate = inicioAno;
+            document.getElementById('filtro-fim').valueAsDate = hoje;
+
+            carregarDadosGerais();
+        };
+
+        function mudarAba(aba) {
+            document.getElementById('view-estrategia').classList.add('hidden');
+            document.getElementById('view-voz').classList.add('hidden');
+            document.getElementById('tab-estrategia').classList.remove('active');
+            document.getElementById('tab-voz').classList.remove('active');
+            
+            document.getElementById(`view-${aba}`).classList.remove('hidden');
+            document.getElementById(`tab-${aba}`).classList.add('active');
+        }
+
+        async function carregarDadosGerais() {
+            try {
+                const [resPesquisa, resAtend] = await Promise.all([
+                    fetch(`${API_PESQUISAS}?action=getAll`).then(r => r.json()),
+                    fetch(`${API_ATENDIMENTOS}?acao=trazerTodos`).then(r => r.json())
+                ]);
+
+                if (resPesquisa.status === 'success') todosPesquisas = resPesquisa.data;
+                if (resAtend.status === 'sucesso') todosAtendimentos = resAtend.dados;
+
+                popularSelectUnidades(todosPesquisas);
+                aplicarFiltros();
+
+            } catch (e) {
+                console.error("Erro carregando dados:", e);
+                alert("Erro de conexão. Verifique o console.");
+            }
+        }
+
+        function aplicarFiltros() {
+            const fUnidade = document.getElementById('filtro-unidade').value;
+            const fIni = document.getElementById('filtro-ini').value;
+            const fFim = document.getElementById('filtro-fim').value;
+
+            // Filtra Pesquisas
+            const pesquisasFiltradas = todosPesquisas.filter(d => {
+                if (d[K.data]) {
+                    const dataReg = new Date(d[K.data]);
+                    dataReg.setHours(0,0,0,0);
+                    if (fIni && dataReg < new Date(fIni+'T00:00:00')) return false;
+                    if (fFim && dataReg > new Date(fFim+'T00:00:00')) return false;
+                }
+                if (fUnidade) {
+                    if (normalizarUnidade(d[K.unidade]) !== fUnidade) return false;
+                }
+                return true;
+            });
+
+            // Filtra Atendimentos (para o comparativo)
+            const atendimentosFiltrados = todosAtendimentos.filter(a => {
+                if (fUnidade) {
+                    if (normalizarUnidade(a.unidade) !== fUnidade) return false;
+                }
+                return true;
+            });
+
+            atualizarDashboard(pesquisasFiltradas, atendimentosFiltrados, fUnidade);
+        }
+
+        function atualizarDashboard(pesquisas, atendimentos, unidadeSelecionada) {
+            document.getElementById('kpi-total').textContent = pesquisas.length;
+
+            renderizarBarrasQualidade(pesquisas);
+
+            const tituloPizza = document.getElementById('titulo-pizza');
+            if (unidadeSelecionada) {
+                tituloPizza.textContent = "Motivação (Origem)";
+                renderizarPizza(pesquisas, K.motivacao);
+            } else {
+                tituloPizza.textContent = "Respostas por Unidade";
+                renderizarPizza(pesquisas, K.unidade, true);
+            }
+
+            renderizarComparativoVolume(pesquisas, atendimentos);
+            renderizarVozCliente(pesquisas);
+        }
+
+        function renderizarBarrasQualidade(dados) {
+            const container = document.getElementById('grafico-barras');
+            container.innerHTML = '';
+            
+            if (dados.length === 0) { container.innerHTML = '<p class="text-gray-400 text-center">Sem dados.</p>'; return; }
+
+            let pontosTotais = 0, pontosPositivos = 0;
+
+            const quesitos = [
+                { label: "Espera", key: K.espera },
+                { label: "Recepção", key: K.recepcao },
+                { label: "Coleta", key: K.coleta },
+                { label: "Clareza", key: K.clareza },
+                { label: "Prazo", key: K.prazo }
+            ];
+
+            quesitos.forEach(q => {
+                let c = { otimo: 0, bom: 0, regular: 0, ruim: 0, total: 0 };
+                
+                dados.forEach(d => {
+                    if (!d[q.key]) return;
+                    const val = d[q.key].toLowerCase();
+                    c.total++;
+                    
+                    if (val.includes('ótimo') || val.includes('otimo')) c.otimo++;
+                    else if (val.includes('bom')) c.bom++;
+                    else if (val.includes('regular')) c.regular++;
+                    else c.ruim++;
+
+                    pontosTotais++;
+                    if (val.includes('ótimo') || val.includes('otimo') || val.includes('bom')) pontosPositivos++;
+                });
+
+                if (c.total > 0) {
+                    const pPos = ((c.otimo + c.bom) / c.total) * 100;
+                    const pReg = (c.regular / c.total) * 100;
+                    const pNeg = (c.ruim / c.total) * 100;
+
+                    container.innerHTML += `
+                        <div>
+                            <div class="flex justify-between mb-1 text-sm">
+                                <span class="font-bold text-gray-700">${q.label}</span>
+                                <span class="text-xs text-gray-500 font-mono bg-gray-100 px-1 rounded">${c.total} votos</span>
+                            </div>
+                            <div class="flex w-full h-4 rounded-full overflow-hidden bg-gray-100 relative group cursor-help">
+                                <div class="bg-green-500 h-full bar-fill" style="width: ${pPos}%"></div>
+                                <div class="bg-yellow-400 h-full bar-fill" style="width: ${pReg}%"></div>
+                                <div class="bg-red-500 h-full bar-fill" style="width: ${pNeg}%"></div>
+                                
+                                <!-- Tooltip Quantitativo -->
+                                <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[9px] text-white font-bold drop-shadow-md">
+                                    ${c.otimo+c.bom} Pos / ${c.regular} Reg / ${c.ruim} Neg
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            const aprovacao = pontosTotais > 0 ? ((pontosPositivos / pontosTotais) * 100).toFixed(1) : 0;
+            document.getElementById('kpi-aprovacao').textContent = `${aprovacao}%`;
+            document.getElementById('bar-aprovacao').style.width = `${aprovacao}%`;
+        }
+
+        function renderizarComparativoVolume(pesquisas, atendimentos) {
+            const container = document.getElementById('grafico-comparativo');
+            container.innerHTML = '';
+
+            const mapa = {};
+            
+            // Agrupa Atendimentos (Normalizado)
+            atendimentos.forEach(a => {
+                const u = normalizarUnidade(a.unidade); 
+                if (!mapa[u]) mapa[u] = { nome: u, atend: 0, pesq: 0 };
+                mapa[u].atend++;
+            });
+            
+            // Agrupa Pesquisas (Normalizado)
+            pesquisas.forEach(p => {
+                const u = normalizarUnidade(p[K.unidade]); 
+                if (!mapa[u]) mapa[u] = { nome: u, atend: 0, pesq: 0 };
+                mapa[u].pesq++;
+            });
+
+            const lista = Object.values(mapa).sort((a,b) => b.atend - a.atend);
+            const maxVal = Math.max(...lista.map(i => Math.max(i.atend, i.pesq))) || 1;
+
+            lista.forEach(item => {
+                const pAtend = (item.atend / maxVal) * 100;
+                const pPesq = (item.pesq / maxVal) * 100;
+                
+                let taxaRetorno = 0;
+                if (item.atend > 0) {
+                    taxaRetorno = ((item.pesq / item.atend) * 100).toFixed(1);
+                } else if (item.pesq > 0) {
+                    taxaRetorno = "100+"; 
+                }
+                
+                container.innerHTML += `
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="font-bold text-gray-700 uppercase">${item.nome}</span>
+                            <span class="text-[10px] text-gray-400">Retorno: <strong>${taxaRetorno}%</strong></span>
+                        </div>
+                        <div class="flex items-center gap-2 h-5">
+                            <!-- Barra Azul (Atendimentos) -->
+                            <div class="h-full bg-bioteste-primary rounded-r bar-fill flex items-center pl-2 text-[10px] text-white font-bold" style="width: ${Math.max(pAtend, 10)}%">
+                                ${item.atend}
+                            </div>
+                            <!-- Barra Verde (Pesquisas) -->
+                            <div class="h-full bg-green-500 rounded-r bar-fill flex items-center pl-2 text-[10px] text-white font-bold" style="width: ${Math.max(pPesq, 10)}%">
+                                ${item.pesq}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderizarVozCliente(dados) {
+            const tbody = document.getElementById('tabela-voz');
+            const empty = document.getElementById('empty-voz');
+            const badge = document.getElementById('badge-voz');
+            tbody.innerHTML = '';
+
+            const voz = dados.filter(d => {
+                const temNome = d[K.nome] && d[K.nome].trim() !== "";
+                const temSugestao = d[K.sugestao] && d[K.sugestao].trim() !== "";
+                return temNome || temSugestao;
+            }).reverse();
+
+            badge.textContent = voz.length;
+
+            if (voz.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            voz.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b border-gray-50 transition-colors";
+                
+                const dataStr = d[K.data] ? new Date(d[K.data]).toLocaleDateString('pt-BR') : '-';
+                const unidade = normalizarUnidade(d[K.unidade]);
+                const nome = d[K.nome] || '<span class="text-gray-300 italic">Anônimo</span>';
+                const contato = d[K.celular] || d[K.email] || '-';
+                const sugestao = d[K.sugestao] || '-';
+                const motivacao = d[K.motivacao] || '-';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-3 text-xs text-gray-500 font-mono">${dataStr}</td>
+                    <td class="px-6 py-3 text-xs font-bold text-bioteste-primary uppercase">${unidade}</td>
+                    <td class="px-6 py-3">
+                        <div class="text-sm font-bold text-gray-800">${nome}</div>
+                        <div class="text-xs text-gray-500">${contato}</div>
+                    </td>
+                    <td class="px-6 py-3">
+                        <div class="text-sm text-gray-700 italic bg-yellow-50 p-2 rounded border border-yellow-100">"${sugestao}"</div>
+                    </td>
+                    <td class="px-6 py-3 text-right text-xs text-gray-500">${motivacao}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderizarPizza(dados, chave, usarNorm = false) {
+            const mapa = {};
+            let total = 0;
+            dados.forEach(d => {
+                let val = d[chave];
+                if(usarNorm) val = normalizarUnidade(val);
+                if(!val) val = "N/I";
+                mapa[val] = (mapa[val] || 0) + 1;
+                total++;
+            });
+
+            const sorted = Object.entries(mapa).sort((a,b) => b[1] - a[1]);
+            let gradient = [], deg = 0;
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+            
+            const legend = document.getElementById('legenda-pizza');
+            legend.innerHTML = '';
+
+            if(sorted.length > 0 && !usarNorm) {
+                document.getElementById('kpi-motivacao').textContent = sorted[0][0];
+            }
+
+            sorted.forEach(([label, val], idx) => {
+                const pct = (val / total) * 100;
+                const slice = (val / total) * 360;
+                const color = colors[idx % colors.length];
+                
+                gradient.push(`${color} ${deg}deg ${deg + slice}deg`);
+                deg += slice;
+
+                legend.innerHTML += `
+                    <div class="flex items-center justify-between pr-2">
+                        <div class="flex items-center gap-1">
+                            <div class="w-2 h-2 rounded-full" style="background-color: ${color}"></div>
+                            <span class="truncate max-w-[100px]" title="${label}">${label}</span>
+                        </div>
+                        <span class="font-bold">${Math.round(pct)}%</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('grafico-pizza').style.background = `conic-gradient(${gradient.join(', ')})`;
+        }
+
+        // --- NORMALIZADOR ROBUSTO (CORRIGIDO) ---
+        // Unifica nomes variantes das duas APIs
+        function normalizarUnidade(txt) {
+            if (!txt) return "Indefinida";
+            const lower = txt.toString().toLowerCase().trim();
+
+            // Regras de Agrupamento Inteligente (Precedência Importa)
+            if (lower.includes("jones")) return "Bioteste Jones dos Santos Neves";
+            if (lower.includes("rio novo")) return "Bioteste Rio Novo";
+            if (lower.includes("central")) return "Bioteste Central";
+            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Bioteste Jerônimo Monteiro";
+            if (lower.includes("sul")) return "Bioteste Sul";
+            
+            // Retorna padrão para unificar "Central" e "Bioteste Central" que não cair no if acima
+            return txt.trim(); 
+        }
+
+        function popularSelectUnidades(dados) {
+            const select = document.getElementById('filtro-unidade');
+            const unicas = new Set();
+            dados.forEach(d => {
+                const u = normalizarUnidade(d[K.unidade]);
+                if (u !== "Indefinida") unicas.add(u);
+            });
+            
+            select.innerHTML = '<option value="">Todas as Unidades</option>';
+            Array.from(unicas).sort().forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                select.appendChild(opt);
+            });
+        }
+    </script>
+</body>
+</html>

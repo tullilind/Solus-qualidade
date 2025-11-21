@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Minha Conta (ADM)</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body.loaded { visibility: visible; opacity: 1; }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar (Injetado pelo Motor ADM) -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header (Injetado pelo Motor ADM) -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- CONTEÚDO -->
+            <div class="p-6 lg:p-10 max-w-4xl mx-auto w-full flex flex-col min-h-full" id="main-content">
+                
+                <!-- Cartão de Perfil -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-8">
+                    
+                    <!-- Capa / Topo do Perfil (Tema Roxo/ADM) -->
+                    <div class="bg-gradient-to-r from-purple-600 to-bioteste-primary h-32 relative">
+                        <div class="absolute -bottom-12 left-8">
+                            <div class="h-24 w-24 rounded-full bg-white p-1 shadow-lg">
+                                <div class="h-full w-full rounded-full bg-purple-50 flex items-center justify-center text-purple-600 text-3xl font-bold" id="profile-avatar-large">
+                                    A
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold border border-white/30">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">verified_user</span>
+                            Administrador
+                        </div>
+                    </div>
+
+                    <div class="pt-16 px-8 pb-8">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                            <div>
+                                <h1 class="text-2xl font-bold text-bioteste-text-heading" id="profile-nome">Carregando...</h1>
+                                <p class="text-bioteste-text-body" id="profile-email">carregando@email.com</p>
+                            </div>
+                            <span class="mt-2 md:mt-0 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold border border-green-200" id="profile-status">
+                                ATIVO
+                            </span>
+                        </div>
+
+                        <hr class="border-gray-100 mb-8">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Coluna 1 -->
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Nome de Usuário (Login)</label>
+                                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span class="material-symbols-outlined text-gray-400">person</span>
+                                        <span class="text-gray-800 font-medium" id="field-usuario">--</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Unidade Vinculada</label>
+                                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span class="material-symbols-outlined text-gray-400">domain</span>
+                                        <span class="text-gray-800 font-medium" id="field-unidade">--</span>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Nível de Acesso</label>
+                                    <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                                        <span class="material-symbols-outlined text-purple-500">security</span>
+                                        <span class="text-purple-800 font-bold uppercase" id="field-acesso">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coluna 2 -->
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">ID do Sistema</label>
+                                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span class="material-symbols-outlined text-gray-400">fingerprint</span>
+                                        <span class="text-gray-600 font-mono text-sm truncate" id="field-id">--</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Token de Acesso Atual</label>
+                                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span class="material-symbols-outlined text-gray-400">key</span>
+                                        <span class="text-gray-600 font-mono text-sm truncate" id="field-token">--</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">Senha</label>
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div class="flex items-center gap-3">
+                                            <span class="material-symbols-outlined text-gray-400">lock</span>
+                                            <input type="password" id="field-senha" readonly class="bg-transparent border-none focus:ring-0 text-gray-800 font-medium p-0 w-32 outline-none" value="">
+                                        </div>
+                                        <button onclick="toggleSenhaInfo()" class="text-gray-400 hover:text-bioteste-primary transition-colors flex items-center">
+                                            <span class="material-symbols-outlined text-sm" id="icon-eye">visibility</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-10 flex justify-end gap-4">
+                            <button onclick="BiotesteLayoutAdm.logout()" class="px-6 py-2.5 rounded-lg border border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined">logout</span>
+                                Sair do Painel ADM
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Info Extra -->
+                <div class="text-center text-gray-400 text-xs mb-8">
+                    <p>Último acesso administrativo: <span id="last-access">--</span></p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS (IMPORTANTE: Caminhos relativos para a pasta pai) -->
+    <script src="../art.secure.js"></script>
+    <script src="layout.adm.js"></script>
+
+    <!-- 5. LÓGICA DA PÁGINA -->
+    <script>
+        window.onload = function() {
+            // 1. Inicializa o Motor de Layout ADM
+            if (typeof BiotesteLayoutAdm !== 'undefined') {
+                BiotesteLayoutAdm.init('minha_conta'); // ID que não destaca nenhum menu específico, ou podemos criar um.
+                initPage();
+            } else {
+                alert("Erro crítico: layout.adm.js não carregado.");
+            }
+        };
+
+        function initPage() {
+            const userData = BiotesteLayoutAdm.user || {};
+
+            // Preenche Dados do Perfil
+            document.getElementById('profile-avatar-large').textContent = userData.nome ? userData.nome.substring(0, 2).toUpperCase() : 'AD';
+            document.getElementById('profile-nome').textContent = userData.nome || 'Administrador';
+            document.getElementById('profile-email').textContent = userData.email || 'E-mail não cadastrado';
+            document.getElementById('profile-status').textContent = (userData.status || 'Ativo').toUpperCase();
+
+            // Preenche Campos
+            document.getElementById('field-usuario').textContent = userData.usuario || '-';
+            document.getElementById('field-unidade').textContent = userData.unidade || 'Todas';
+            document.getElementById('field-acesso').textContent = userData.acesso || 'Administrador';
+            document.getElementById('field-id').textContent = userData.id || '-';
+            document.getElementById('field-token').textContent = userData.tokem || '************';
+            document.getElementById('field-senha').value = userData.senha || '';
+
+            // Data de acesso (Simulada)
+            document.getElementById('last-access').textContent = new Date().toLocaleString('pt-BR');
+        }
+
+        function toggleSenhaInfo() {
+            const input = document.getElementById('field-senha');
+            const icon = document.getElementById('icon-eye');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility_off';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility';
+            }
+        }
+    </script>
+</body>
+</html>

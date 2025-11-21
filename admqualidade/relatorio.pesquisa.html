@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Relatório de Pesquisa</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body.loaded { visibility: visible; opacity: 1; }
+
+        /* Estilo "Folha de Papel" para visualização na tela */
+        .paper-sheet {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* ESTILOS DE IMPRESSÃO (PDF) */
+        @media print {
+            @page { size: A4; margin: 10mm; }
+            body { visibility: visible !important; opacity: 1 !important; background: white; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            
+            /* Esconde a interface do sistema */
+            #app-sidebar, #app-header, #controls-container, .no-print, #art-secure-badge { display: none !important; }
+            
+            main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            .paper-sheet { box-shadow: none; width: 100%; margin: 0; padding: 0; }
+            
+            /* Quebra de página limpa entre unidades */
+            .page-break { page-break-before: always; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+
+        /* Gráficos CSS simples para impressão */
+        .mini-bar-container { width: 80px; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 4px; }
+        .mini-bar { height: 100%; border-radius: 3px; }
+        
+        table.report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
+        table.report-table th { text-align: left; border-bottom: 2px solid #e5e7eb; padding: 6px; color: #374151; font-weight: 700; text-transform: uppercase; font-size: 10px; background-color: #f9fafb; }
+        table.report-table td { border-bottom: 1px solid #f3f4f6; padding: 6px; color: #4b5563; vertical-align: middle; }
+        table.report-table tr:last-child td { border-bottom: none; }
+
+        /* Tabela de Comentários */
+        table.comments-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e5e7eb; }
+        table.comments-table th { background-color: #f3f4f6; padding: 6px; text-align: left; font-weight: bold; color: #374151; }
+        table.comments-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        .comment-text { font-style: italic; color: #4b5563; background-color: #fefce8; padding: 4px; border-radius: 4px; display: block; margin-top: 2px; }
+    </style>
+</head>
+
+<body class="font-display bg-gray-100 overflow-y-auto">
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full no-print"></aside>
+
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20 no-print"></header>
+
+            <!-- ÁREA DE CONTROLE (Filtros) -->
+            <div id="controls-container" class="p-6 max-w-7xl mx-auto no-print">
+                <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div class="w-full">
+                        <h1 class="text-2xl font-bold text-bioteste-text-heading mb-4">Gerador de Relatórios</h1>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="flex-1">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Unidade</label>
+                                <select id="filtro-unidade" class="w-full text-sm rounded-lg border-gray-300 focus:ring-bioteste-primary focus:border-bioteste-primary">
+                                    <option value="">Todas as Unidades (Geral)</option>
+                                    <!-- Preenchido via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Início</label>
+                                <input type="date" id="filtro-ini" class="w-full text-sm rounded-lg border-gray-300 focus:ring-bioteste-primary focus:border-bioteste-primary">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Fim</label>
+                                <input type="date" id="filtro-fim" class="w-full text-sm rounded-lg border-gray-300 focus:ring-bioteste-primary focus:border-bioteste-primary">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="gerarRelatorio()" class="bg-bioteste-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20">
+                            <span class="material-symbols-outlined">article</span>
+                            Gerar Relatório
+                        </button>
+                        <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-gray-700 transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined">picture_as_pdf</span>
+                            Exportar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÁREA DO PAPEL (RELATÓRIO) -->
+            <div class="pb-20 print:pb-0">
+                <div id="paper" class="paper-sheet">
+                    
+                    <!-- Cabeçalho do Relatório -->
+                    <div class="border-b-2 border-bioteste-primary pb-4 mb-8 flex justify-between items-center">
+                        <div>
+                            <h1 class="text-2xl font-black text-bioteste-text-heading uppercase tracking-wide">Relatório de Qualidade</h1>
+                            <p class="text-sm text-gray-500">Bioteste Solus - Sistema de Gestão</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-400">Data de Emissão</p>
+                            <p class="font-mono text-sm font-bold" id="report-date">--/--/----</p>
+                        </div>
+                    </div>
+
+                    <!-- Filtros Aplicados -->
+                    <div class="bg-gray-50 p-3 rounded border border-gray-200 mb-8 text-xs text-gray-600 flex gap-6">
+                        <span><strong>Período:</strong> <span id="lbl-periodo">--</span></span>
+                        <span><strong>Filtro Unidade:</strong> <span id="lbl-unidade">Todas</span></span>
+                        <span><strong>Total de Participações:</strong> <span id="lbl-total">0</span></span>
+                    </div>
+
+                    <!-- Conteúdo Dinâmico -->
+                    <div id="report-content" class="space-y-12">
+                        <div class="text-center py-20 text-gray-400 italic">
+                            Carregando dados...
+                        </div>
+                    </div>
+
+                    <!-- Rodapé do Relatório -->
+                    <div class="mt-12 pt-4 border-t border-gray-300 flex justify-between items-center text-[10px] text-gray-400 avoid-break">
+                        <span>Bioteste Solus - Confidencial</span>
+                        <span>Gerado automaticamente pelo sistema</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MÓDULOS -->
+    <script src="../art.secure.js"></script>
+    <script src="layout.adm.js"></script>
+
+    <!-- LÓGICA -->
+    <script>
+        const API_PESQUISAS = "https://script.google.com/macros/s/AKfycbxgZe7BI3RcVQI_zzQ3OVwqnWWTbsuRGW7JTva_svXBUoj5e_vYnNQHbLDrQNXq42YS/exec";
+        
+        // Mapeamento de Perguntas para Labels Curtos
+        const MAPA_PERGUNTAS = [
+            { key: "Qual é a sua avaliação sobre o tempo de espera para ser atendido?", label: "Tempo de Espera" },
+            { key: "Em relação à cordialidade de nossa equipe de recepção, como você classificaria o atendimento? ", label: "Cordialidade Recepção" },
+            { key: "Sobre a cordialidade do(a) profissional de coleta (responsável pelo seu exame), qual sua avaliação? ", label: "Cordialidade Coleta" },
+            { key: "Como o(a) senhor(a) avalia a clareza das informações que lhe foram fornecidas? ", label: "Clareza das Informações" },
+            { key: "Quanto ao prazo estipulado para a entrega do seu resultado, qual é a sua avaliação? ", label: "Prazo de Entrega" }
+        ];
+
+        // Chaves para Feedback
+        const KEY_UNIDADE = "De qual  Unidade?";
+        const KEY_DATA = "Carimbo de data/hora";
+        const KEY_SUGESTAO = "Disponibilizamos este espaço para que você possa registrar suas valiosas sugestões e/ou críticas construtivas: ";
+        const KEY_NOME = "Nome completo";
+        const KEY_CELULAR = "Celular";
+        const KEY_EMAIL = "E-mail ";
+
+        let cacheDados = [];
+
+        window.onload = function() {
+            if (typeof BiotesteLayoutAdm !== 'undefined') BiotesteLayoutAdm.init('relatorio_pesquisa');
+            
+            // Define datas padrão (Início do Ano até Hoje)
+            const hoje = new Date();
+            const inicioAno = new Date(hoje.getFullYear(), 0, 1);
+            document.getElementById('filtro-ini').valueAsDate = inicioAno;
+            document.getElementById('filtro-fim').valueAsDate = hoje;
+            document.getElementById('report-date').textContent = hoje.toLocaleDateString('pt-BR') + ' ' + hoje.toLocaleTimeString('pt-BR');
+
+            carregarDadosIniciais();
+        };
+
+        async function carregarDadosIniciais() {
+            try {
+                const res = await fetch(`${API_PESQUISAS}?action=getAll`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    cacheDados = json.data;
+                    popularSelect(cacheDados);
+                    gerarRelatorio(); // Gera automático ao carregar
+                }
+            } catch (e) {
+                alert("Erro ao carregar dados da API.");
+            }
+        }
+
+        // --- Normalização Robusta (Igual ao Painel) ---
+        function normalizarUnidade(txt) {
+            if (!txt) return "Indefinida";
+            const lower = txt.toString().toLowerCase().trim();
+            if (lower.includes("jones")) return "Bioteste Jones dos Santos Neves";
+            if (lower.includes("rio novo")) return "Bioteste Rio Novo";
+            if (lower.includes("central")) return "Bioteste Central";
+            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Bioteste Jerônimo Monteiro";
+            if (lower.includes("sul")) return "Bioteste Sul";
+            return txt.trim(); 
+        }
+
+        function popularSelect(dados) {
+            const select = document.getElementById('filtro-unidade');
+            const unidades = new Set();
+            dados.forEach(d => {
+                const u = normalizarUnidade(d[KEY_UNIDADE]);
+                if (u !== "Indefinida") unidades.add(u);
+            });
+            
+            select.innerHTML = '<option value="">Todas as Unidades (Relatório Completo)</option>';
+            Array.from(unidades).sort().forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                select.appendChild(opt);
+            });
+        }
+
+        function gerarRelatorio() {
+            const fUnidade = document.getElementById('filtro-unidade').value;
+            const fIni = document.getElementById('filtro-ini').value;
+            const fFim = document.getElementById('filtro-fim').value;
+
+            // 1. Filtragem
+            const filtrados = cacheDados.filter(d => {
+                if (d[KEY_DATA]) {
+                    const dataReg = new Date(d[KEY_DATA]);
+                    dataReg.setHours(0,0,0,0);
+                    if (fIni && dataReg < new Date(fIni+'T00:00:00')) return false;
+                    if (fFim && dataReg > new Date(fFim+'T00:00:00')) return false;
+                }
+                
+                // Correção: Se unidade selecionada, filtra estritamente pelo nome normalizado
+                if (fUnidade && fUnidade !== "") {
+                    if (normalizarUnidade(d[KEY_UNIDADE]) !== fUnidade) return false;
+                }
+                return true;
+            });
+
+            // 2. Atualiza Header
+            document.getElementById('lbl-periodo').textContent = `${formatarDataBR(fIni)} a ${formatarDataBR(fFim)}`;
+            document.getElementById('lbl-unidade').textContent = fUnidade || "Todas as Unidades";
+            document.getElementById('lbl-total').textContent = filtrados.length;
+
+            // 3. Agrupamento
+            const grupos = {};
+            filtrados.forEach(d => {
+                // Agrupa pelo nome normalizado para juntar "Jones" com "Bioteste Jones"
+                const nomeNorm = normalizarUnidade(d[KEY_UNIDADE]);
+                if (!grupos[nomeNorm]) grupos[nomeNorm] = [];
+                grupos[nomeNorm].push(d);
+            });
+
+            renderizarConteudo(grupos);
+        }
+
+        function renderizarConteudo(grupos) {
+            const container = document.getElementById('report-content');
+            container.innerHTML = '';
+
+            if (Object.keys(grupos).length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-400">Nenhum dado encontrado para este período.</div>';
+                return;
+            }
+
+            // Ordena unidades alfabeticamente
+            const chavesOrdenadas = Object.keys(grupos).sort();
+
+            chavesOrdenadas.forEach((nomeUnidade, index) => {
+                const dadosUnidade = grupos[nomeUnidade];
+                const totalUnidade = dadosUnidade.length;
+
+                // Cria o bloco da unidade
+                const section = document.createElement('div');
+                if (index > 0) section.className = "avoid-break mt-8 pt-8 border-t-4 border-gray-100 page-break";
+                else section.className = "avoid-break";
+
+                let html = `
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-bioteste-primary flex items-center gap-2">
+                            <span class="material-symbols-outlined">domain</span>
+                            ${nomeUnidade}
+                        </h2>
+                        <p class="text-sm text-gray-500">Total de Participações: <strong>${totalUnidade}</strong></p>
+                    </div>
+                    
+                    <!-- Tabela de Estatísticas -->
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">1. Indicadores de Satisfação</h3>
+                    <table class="report-table mb-8">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%">Quesito Avaliado</th>
+                                <th style="width: 15%">Ótimo</th>
+                                <th style="width: 15%">Bom</th>
+                                <th style="width: 15%">Regular</th>
+                                <th style="width: 15%">Ruim</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                // Linhas de Estatísticas
+                MAPA_PERGUNTAS.forEach(pergunta => {
+                    const stats = calcularEstatisticas(dadosUnidade, pergunta.key);
+                    
+                    const barOtimo = `<div class="mini-bar-container"><div class="mini-bar bg-green-500" style="width:${stats.pctOtimo}%"></div></div>`;
+                    const barBom = `<div class="mini-bar-container"><div class="mini-bar bg-blue-400" style="width:${stats.pctBom}%"></div></div>`;
+                    const barReg = `<div class="mini-bar-container"><div class="mini-bar bg-yellow-400" style="width:${stats.pctReg}%"></div></div>`;
+                    const barRuim = `<div class="mini-bar-container"><div class="mini-bar bg-red-500" style="width:${stats.pctRuim}%"></div></div>`;
+
+                    html += `
+                        <tr>
+                            <td>${pergunta.label}</td>
+                            <td><div class="font-bold text-green-700">${stats.otimo} <span class="text-[9px] text-gray-400 font-normal">(${stats.pctOtimo}%)</span></div>${barOtimo}</td>
+                            <td><div class="font-bold text-blue-600">${stats.bom} <span class="text-[9px] text-gray-400 font-normal">(${stats.pctBom}%)</span></div>${barBom}</td>
+                            <td><div class="font-bold text-yellow-600">${stats.regular} <span class="text-[9px] text-gray-400 font-normal">(${stats.pctReg}%)</span></div>${barReg}</td>
+                            <td><div class="font-bold text-red-600">${stats.ruim} <span class="text-[9px] text-gray-400 font-normal">(${stats.pctRuim}%)</span></div>${barRuim}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+
+                // --- SEÇÃO: FEEDBACK E IDENTIFICAÇÃO ---
+                // Filtra comentários relevantes desta unidade
+                const feedbacks = dadosUnidade.filter(d => {
+                    const temNome = d[KEY_NOME] && d[KEY_NOME].trim() !== "";
+                    const temSugestao = d[KEY_SUGESTAO] && d[KEY_SUGESTAO].trim() !== "";
+                    return temNome || temSugestao;
+                });
+
+                if (feedbacks.length > 0) {
+                    html += `
+                        <h3 class="text-xs font-bold text-gray-400 uppercase mb-2 mt-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">record_voice_over</span>
+                            2. Feedback e Identificação
+                        </h3>
+                        <table class="comments-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%">Data</th>
+                                    <th style="width: 30%">Cliente / Contato</th>
+                                    <th style="width: 50%">Observações / Críticas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    feedbacks.forEach(f => {
+                        const dataStr = f[KEY_DATA] ? new Date(f[KEY_DATA]).toLocaleDateString('pt-BR') : '-';
+                        const nome = f[KEY_NOME] || 'Anônimo';
+                        const contato = [f[KEY_CELULAR], f[KEY_EMAIL]].filter(Boolean).join(' / ') || '-';
+                        const texto = f[KEY_SUGESTAO] ? `<span class="comment-text">"${f[KEY_SUGESTAO]}"</span>` : '<span class="text-gray-300 text-[10px]">- Sem comentário escrito -</span>';
+
+                        html += `
+                            <tr>
+                                <td>${dataStr}</td>
+                                <td>
+                                    <div class="font-bold text-gray-700">${nome}</div>
+                                    <div class="text-[9px] text-gray-500">${contato}</div>
+                                </td>
+                                <td>${texto}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `</tbody></table>`;
+                } else {
+                    html += `<p class="text-xs text-gray-400 italic mt-4 p-2 border border-dashed border-gray-200 rounded text-center">Nenhuma observação escrita ou identificação registrada para esta unidade neste período.</p>`;
+                }
+                
+                section.innerHTML = html;
+                container.appendChild(section);
+            });
+        }
+
+        function calcularEstatisticas(dados, key) {
+            let c = { otimo: 0, bom: 0, regular: 0, ruim: 0, total: 0 };
+            
+            dados.forEach(d => {
+                if (!d[key]) return;
+                const val = d[key].toLowerCase();
+                c.total++;
+                if (val.includes('ótimo') || val.includes('otimo')) c.otimo++;
+                else if (val.includes('bom')) c.bom++;
+                else if (val.includes('regular')) c.regular++;
+                else c.ruim++;
+            });
+
+            const calcPct = (val) => c.total > 0 ? ((val / c.total) * 100).toFixed(0) : 0;
+
+            return {
+                otimo: c.otimo, pctOtimo: calcPct(c.otimo),
+                bom: c.bom, pctBom: calcPct(c.bom),
+                regular: c.regular, pctReg: calcPct(c.regular),
+                ruim: c.ruim, pctRuim: calcPct(c.ruim)
+            };
+        }
+
+        function formatarDataBR(dataUS) {
+            if(!dataUS) return "--";
+            const partes = dataUS.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+    </script>
+</body>
+</html>

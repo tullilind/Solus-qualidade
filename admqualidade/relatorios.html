@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Relatórios Gerenciais</title>
+    <link rel="icon" type="image/png" href="../logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* CSS Crítico para evitar tela branca eterna */
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body.loaded { visibility: visible; opacity: 1; }
+
+        /* Fallback: Se o JS falhar, mostra a página após 1.5s */
+        @keyframes forceShow { to { visibility: visible; opacity: 1; } }
+        body { animation: forceShow 0.1s forwards 1.5s; }
+
+        /* Checkbox personalizado */
+        .custom-checkbox {
+            width: 18px; height: 18px;
+            border-radius: 4px;
+            border: 2px solid #d1d5db;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .custom-checkbox:checked {
+            background-color: #ef4444;
+            border-color: #ef4444;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        }
+
+        /* ESTILOS DE IMPRESSÃO (PDF) */
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body { visibility: visible !important; opacity: 1 !important; background: white; margin: 0; }
+            
+            /* Esconde elementos de navegação e controle */
+            #app-sidebar, #app-header, #controls-area, .no-print, .checkbox-col, #art-secure-badge { display: none !important; }
+            
+            main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            
+            /* Formatação da Tabela para Impressão */
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
+            th, td { border: 1px solid #e5e7eb !important; padding: 4px !important; }
+            th { background-color: #f3f4f6 !important; color: black !important; -webkit-print-color-adjust: exact; }
+            
+            .print-header { display: block !important; margin-bottom: 15px; border-bottom: 2px solid #005A9C; padding-bottom: 5px; }
+        }
+        .print-header { display: none; }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar (Injetado pelo layout.adm.js) -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full no-print"></aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header (Injetado pelo layout.adm.js) -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20 no-print"></header>
+
+            <!-- ============================================================ -->
+            <!-- 3. CONTEÚDO: RELATÓRIOS E GESTÃO                             -->
+            <!-- ============================================================ -->
+            <div class="p-6 lg:p-10 max-w-[1400px] mx-auto w-full pb-24" id="main-content">
+                
+                <!-- Cabeçalho de Impressão -->
+                <div class="print-header">
+                    <h1 class="text-xl font-bold text-bioteste-primary">Relatório Analítico de Atendimentos</h1>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Bioteste Solus - Gestão</span>
+                        <span id="print-info">Gerado em: --/--/----</span>
+                    </div>
+                </div>
+
+                <!-- Cabeçalho da Tela -->
+                <div class="mb-6 flex flex-col md:flex-row justify-between items-end gap-4 no-print">
+                    <div>
+                        <h1 class="text-bioteste-text-heading text-3xl font-black tracking-tight">Relatórios Gerenciais</h1>
+                        <p class="text-bioteste-text-body mt-1">Gestão completa do histórico de atendimentos da rede.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="exportarCSV()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition-colors flex items-center gap-2 shadow-sm">
+                            <span class="material-symbols-outlined">csv</span>
+                            Baixar Excel/CSV
+                        </button>
+                        <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+                            <span class="material-symbols-outlined">print</span>
+                            Imprimir PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ALERTA: RESULTADOS PARA HOJE -->
+                <div id="alert-box" class="hidden mb-6 bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg shadow-sm no-print animate-pulse">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <span class="material-symbols-outlined text-orange-500">notification_important</span>
+                        </div>
+                        <div class="ml-3 w-full">
+                            <h3 class="text-sm font-bold text-orange-800 flex justify-between">
+                                <span>Resultados com Entrega para Hoje</span>
+                                <span class="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full" id="alert-total">0</span>
+                            </h3>
+                            <div class="mt-2 text-sm text-orange-700" id="alert-content">
+                                <!-- Lista Dinâmica -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ÁREA DE FILTROS (GRID CORRIGIDO) -->
+                <div id="controls-area" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 no-print">
+                    <div class="flex items-center gap-2 mb-3 border-b border-gray-100 pb-2">
+                        <span class="material-symbols-outlined text-bioteste-primary">filter_alt</span>
+                        <span class="text-sm font-bold text-gray-700 uppercase">Filtros Avançados</span>
+                        <button onclick="limparFiltros()" class="ml-auto text-xs text-red-500 hover:underline">Limpar</button>
+                    </div>
+                    
+                    <!-- CORREÇÃO DO GRID: 5 Colunas no Total -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        
+                        <!-- Coluna 1: Busca -->
+                        <div class="md:col-span-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Busca (Nome/Astra)</label>
+                            <input type="text" id="f-texto" onkeyup="aplicarFiltros()" placeholder="Digite..." class="w-full text-sm py-2 border-gray-300 rounded-lg focus:border-bioteste-primary focus:ring-bioteste-primary">
+                        </div>
+                        
+                        <!-- Coluna 2: Unidade -->
+                        <div class="md:col-span-1">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Unidade</label>
+                            <select id="f-unidade" onchange="aplicarFiltros()" class="w-full text-sm py-2 border-gray-300 rounded-lg focus:border-bioteste-primary focus:ring-bioteste-primary">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+                        </div>
+
+                        <!-- Coluna 3 e 4: Datas de Entrada (Ocupa 2 espaços para não apertar) -->
+                        <div class="md:col-span-2 grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Entrada (De)</label>
+                                <input type="date" id="f-ini" onchange="aplicarFiltros()" class="w-full text-sm py-2 border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Entrada (Até)</label>
+                                <input type="date" id="f-fim" onchange="aplicarFiltros()" class="w-full text-sm py-2 border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <!-- Coluna 5: Data Resultado (Isolada na ponta) -->
+                        <div class="md:col-span-1">
+                            <label class="text-[10px] font-bold text-orange-500 uppercase mb-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[14px]">event_available</span> Previsão Resultado
+                            </label>
+                            <input type="date" id="f-resultado" onchange="aplicarFiltros()" class="w-full text-sm py-2 border-orange-300 rounded-lg bg-orange-50 focus:border-orange-500 focus:ring-orange-500 font-bold text-orange-800">
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- BARRA DE AÇÕES EM MASSA -->
+                <div id="bulk-actions" class="hidden bg-red-50 border border-red-200 p-3 rounded-lg mb-4 flex justify-between items-center no-print animate-pulse">
+                    <div class="flex items-center gap-2 text-red-700 font-bold text-sm">
+                        <span class="material-symbols-outlined">check_box</span>
+                        <span id="selected-count">0</span> itens selecionados
+                    </div>
+                    <button onclick="deletarSelecionados()" class="bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-red-700 transition-colors flex items-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined text-lg">delete</span>
+                        Excluir Selecionados
+                    </button>
+                </div>
+
+                <!-- TABELA DE DADOS -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-100 text-gray-500">
+                                <tr>
+                                    <th class="w-10 p-4 text-center checkbox-col no-print">
+                                        <input type="checkbox" id="check-all" onclick="toggleTodos(this)" class="custom-checkbox form-checkbox text-red-600 focus:ring-red-500 rounded">
+                                    </th>
+                                    <th class="px-4 py-3 font-bold">Data Entrada</th>
+                                    <th class="px-4 py-3 font-bold">Paciente</th>
+                                    <th class="px-4 py-3 font-bold">Nº Astra</th>
+                                    <th class="px-4 py-3 font-bold">Unidade</th>
+                                    <th class="px-4 py-3 font-bold w-32">Data Resultado</th>
+                                    <th class="px-4 py-3 font-bold text-right w-24">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-corpo" class="divide-y divide-gray-50 text-gray-700">
+                                <!-- Linhas via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Loader / Empty State -->
+                    <div id="tabela-msg" class="p-12 text-center text-gray-400 hidden">
+                        <span class="material-symbols-outlined text-4xl mb-2">search_off</span>
+                        <p>Nenhum registro encontrado.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MÓDULOS -->
+    <!-- Nota: Caminhos ajustados para estrutura de pastas ADM -->
+    <script src="../art.secure.js"></script>
+    <script src="layout.adm.js"></script>
+
+    <!-- LÓGICA -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+
+        let todosDados = [];
+        let dadosFiltrados = [];
+        let idsSelecionados = new Set();
+
+        window.onload = function() {
+            if (typeof BiotesteLayoutAdm !== 'undefined') {
+                BiotesteLayoutAdm.init('relatorios_gerais');
+            } else {
+                // Fallback para garantir que a página carregue
+                console.warn("Layout ADM não carregado.");
+                document.body.classList.add('loaded');
+            }
+            
+            const infoPrint = document.getElementById('print-info');
+            if (infoPrint) infoPrint.textContent = `Gerado em: ${new Date().toLocaleString()}`;
+
+            carregarDados();
+        };
+
+        async function carregarDados() {
+            const tbody = document.getElementById('tabela-corpo');
+            if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-400 animate-pulse">Carregando banco de dados...</td></tr>';
+
+            try {
+                const response = await fetch(`${API_URL}?acao=trazerTodos`);
+                const result = await response.json();
+
+                if (result.status === 'sucesso') {
+                    todosDados = result.dados.reverse(); 
+                    popularSelectUnidades();
+                    verificarAlertas();
+                    aplicarFiltros();
+                } else {
+                    if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Erro ao carregar dados.</td></tr>';
+                }
+            } catch (e) {
+                console.error(e);
+                if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Falha na conexão.</td></tr>';
+            }
+        }
+
+        // --- Lógica de Filtros ---
+
+        function aplicarFiltros() {
+            const fTexto = document.getElementById('f-texto').value.toLowerCase();
+            const fUnidade = document.getElementById('f-unidade').value;
+            const fIni = document.getElementById('f-ini').value;
+            const fFim = document.getElementById('f-fim').value;
+            const fRes = document.getElementById('f-resultado').value; 
+
+            dadosFiltrados = todosDados.filter(item => {
+                // Texto (Nome ou Astra)
+                const textoMatch = (item.nomePaciente || '').toLowerCase().includes(fTexto) || 
+                                   (item.numeroAtendimento || '').toLowerCase().includes(fTexto);
+                if (!textoMatch) return false;
+
+                // Unidade (Com Normalização)
+                if (fUnidade) {
+                    const uItem = normalizarUnidade(item.unidade);
+                    if (uItem !== fUnidade) return false;
+                }
+
+                // Data Entrada
+                if (fIni || fFim) {
+                    const d = converterParaDate(item.dataEntrada);
+                    if (d) {
+                        d.setHours(0,0,0,0);
+                        if (fIni && d < new Date(fIni+'T00:00:00')) return false;
+                        if (fFim && d > new Date(fFim+'T00:00:00')) return false;
+                    }
+                }
+
+                // Data Resultado
+                if (fRes) {
+                    const dRes = converterParaDate(item.dataResultado);
+                    if (!dRes) return false;
+                    dRes.setHours(0,0,0,0);
+                    if (dRes.getTime() !== new Date(fRes+'T00:00:00').getTime()) return false;
+                }
+
+                return true;
+            });
+
+            renderizarTabela();
+        }
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabela-corpo');
+            const msg = document.getElementById('tabela-msg');
+            
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            if (dadosFiltrados.length === 0) {
+                if(msg) msg.classList.remove('hidden');
+                return;
+            }
+            if(msg) msg.classList.add('hidden');
+
+            // Reset seleção
+            idsSelecionados.clear();
+            atualizarInterfaceSelecao();
+            const chkAll = document.getElementById('check-all');
+            if(chkAll) chkAll.checked = false;
+
+            dadosFiltrados.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors group";
+                
+                const dEntrada = formatarData(item.dataEntrada);
+                const dRes = formatarData(item.dataResultado);
+                const astra = item.numeroAtendimento || '-';
+                const statusPrazo = verificarPrazo(item.dataResultado);
+                const unidadeFormatada = normalizarUnidade(item.unidade); // Visual limpo
+
+                tr.innerHTML = `
+                    <td class="p-4 text-center checkbox-col no-print">
+                        <input type="checkbox" value="${item.id}" onclick="toggleItem('${item.id}')" class="custom-checkbox form-checkbox text-red-600 focus:ring-red-500 rounded">
+                    </td>
+                    <td class="px-4 py-3 text-xs font-mono text-gray-500">${dEntrada}</td>
+                    <td class="px-4 py-3 font-bold text-gray-800">${item.nomePaciente}</td>
+                    <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">${astra}</span></td>
+                    <td class="px-4 py-3 text-xs uppercase text-gray-500 font-bold">${unidadeFormatada}</td>
+                    <td class="px-4 py-3 font-bold ${statusPrazo.cor}">${dRes}</td>
+                    <td class="px-4 py-3 text-right">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+                            ${statusPrazo.texto}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Normalização ---
+        function normalizarUnidade(txt) {
+            if (!txt) return "Indefinida";
+            const lower = txt.toString().toLowerCase().trim();
+            if (lower.includes("jones")) return "Bioteste Jones dos Santos Neves";
+            if (lower.includes("rio novo")) return "Bioteste Rio Novo";
+            if (lower.includes("central")) return "Bioteste Central";
+            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Bioteste Jerônimo Monteiro";
+            if (lower.includes("sul")) return "Bioteste Sul";
+            return txt.trim(); 
+        }
+
+        // --- Lógica de Seleção e Exclusão ---
+
+        function toggleTodos(checkbox) {
+            const checkboxes = document.querySelectorAll('#tabela-corpo input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+                if (checkbox.checked) idsSelecionados.add(cb.value);
+                else idsSelecionados.delete(cb.value);
+            });
+            atualizarInterfaceSelecao();
+        }
+
+        function toggleItem(id) {
+            if (idsSelecionados.has(id)) idsSelecionados.delete(id);
+            else idsSelecionados.add(id);
+            atualizarInterfaceSelecao();
+        }
+
+        function atualizarInterfaceSelecao() {
+            const box = document.getElementById('bulk-actions');
+            const count = document.getElementById('selected-count');
+            
+            if (idsSelecionados.size > 0) {
+                box.classList.remove('hidden');
+                count.textContent = idsSelecionados.size;
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        async function deletarSelecionados() {
+            if (!confirm(`ATENÇÃO: Você está prestes a excluir ${idsSelecionados.size} registros permanentemente. Confirmar?`)) return;
+
+            const btn = document.querySelector('#bulk-actions button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Excluindo...";
+            btn.disabled = true;
+
+            try {
+                const idsArray = Array.from(idsSelecionados).join(',');
+                const url = `${API_URL}?acao=deletar&ids=${encodeURIComponent(idsArray)}`;
+
+                const res = await fetch(url);
+                const json = await res.json();
+
+                if (json.status === 'sucesso') {
+                    alert("Registros excluídos com sucesso!");
+                    carregarDados();
+                } else {
+                    alert("Erro ao excluir: " + json.mensagem);
+                }
+            } catch (e) {
+                alert("Erro de conexão ao excluir.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // --- Alertas Inteligentes ---
+
+        function verificarAlertas() {
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            
+            const alertas = {};
+            let totalAlertas = 0;
+
+            todosDados.forEach(item => {
+                const dRes = converterParaDate(item.dataResultado);
+                if (dRes) {
+                    dRes.setHours(0,0,0,0);
+                    if (dRes.getTime() === hoje.getTime()) {
+                        const u = normalizarUnidade(item.unidade);
+                        alertas[u] = (alertas[u] || 0) + 1;
+                        totalAlertas++;
+                    }
+                }
+            });
+
+            const box = document.getElementById('alert-box');
+            const content = document.getElementById('alert-content');
+            const badge = document.getElementById('alert-total');
+
+            if (totalAlertas > 0) {
+                box.classList.remove('hidden');
+                badge.textContent = totalAlertas;
+                
+                let html = '<ul class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+                for (const [unidade, qtd] of Object.entries(alertas)) {
+                    html += `<li class="bg-white/50 px-2 py-1 rounded flex justify-between text-xs"><span>${unidade}</span> <strong>${qtd} pendentes</strong></li>`;
+                }
+                html += '</ul>';
+                content.innerHTML = html;
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        // --- Exportação CSV ---
+        function exportarCSV() {
+            if (dadosFiltrados.length === 0) { alert("Sem dados para exportar."); return; }
+
+            let csv = '\uFEFF'; // BOM
+            csv += "Data Entrada;Paciente;Astra;Unidade;Atendente;Data Resultado;Celular\n";
+
+            dadosFiltrados.forEach(item => {
+                const linha = [
+                    formatarData(item.dataEntrada),
+                    item.nomePaciente,
+                    item.numeroAtendimento,
+                    normalizarUnidade(item.unidade),
+                    item.atendente,
+                    formatarData(item.dataResultado),
+                    item.celular
+                ].map(campo => `"${(campo || '').toString().replace(/"/g, '""')}"`).join(';');
+                csv += linha + "\n";
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `relatorio_bioteste_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        // --- Utilitários ---
+        function popularSelectUnidades() {
+            const select = document.getElementById('f-unidade');
+            const unicas = new Set();
+            todosDados.forEach(i => { 
+                const u = normalizarUnidade(i.unidade);
+                if(u !== 'Indefinida') unicas.add(u); 
+            });
+            
+            select.innerHTML = '<option value="">Todas as Unidades</option>';
+            Array.from(unicas).sort().forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u;
+                opt.textContent = u;
+                select.appendChild(opt);
+            });
+        }
+
+        function limparFiltros() {
+            document.getElementById('f-texto').value = '';
+            document.getElementById('f-unidade').value = '';
+            document.getElementById('f-ini').value = '';
+            document.getElementById('f-fim').value = '';
+            document.getElementById('f-resultado').value = '';
+            aplicarFiltros();
+        }
+
+        function converterParaDate(dataString) {
+            if (!dataString) return null;
+            if (dataString.includes('-')) return new Date(dataString);
+            if (dataString.includes('/')) {
+                const partes = dataString.split('/');
+                if(partes.length === 3) return new Date(partes[2], partes[1]-1, partes[0]);
+            }
+            return null;
+        }
+
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            if (dataString.match(/^\d{2}\/\d{2}\/\d{4}/)) return dataString;
+            try {
+                const d = new Date(dataString);
+                if (isNaN(d.getTime())) return dataString;
+                const dia = String(d.getDate()).padStart(2, '0');
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const ano = d.getFullYear();
+                return `${dia}/${mes}/${ano}`;
+            } catch (e) { return dataString; }
+        }
+
+        function verificarPrazo(dataRes) {
+            const d = converterParaDate(dataRes);
+            if (!d) return { cor: 'text-gray-600', texto: 'Indefinido' };
+            
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            d.setHours(0,0,0,0);
+
+            if (d.getTime() < hoje.getTime()) return { cor: 'text-red-600', texto: 'Atrasado' };
+            if (d.getTime() === hoje.getTime()) return { cor: 'text-orange-600', texto: 'Para Hoje' };
+            return { cor: 'text-green-600', texto: 'No Prazo' };
+        }
+    </script>
+</body>
+</html>
