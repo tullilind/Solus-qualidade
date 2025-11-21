@@ -268,7 +268,7 @@
                 const user = JSON.parse(dadosSalvos);
                 redirecionarUsuario(user.acesso);
             } else {
-                window.location.href = "verificar.token.html";
+                window.location.href = "tokem.solus.html";
             }
         }
 
@@ -306,7 +306,7 @@
                 if (result.status === true) {
                     localStorage.setItem('bioteste_user', JSON.stringify(result.data));
                     mostrarNotificacao("success", "Acesso Permitido!");
-                    setTimeout(() => { window.location.href = "verificar.token.html"; }, 1000);
+                    setTimeout(() => { window.location.href = "tokem.solus.html"; }, 1000);
                 } else {
                     mostrarNotificacao("error", result.message || "Credenciais inválidas.");
                 }
