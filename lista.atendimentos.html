@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Lista de Atendimentos</title>
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* Estilos Base */
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body.loaded { visibility: visible; opacity: 1; }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar (Injetado) -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header (Injetado) -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- ============================================================ -->
+            <!-- 3. CONTEÚDO: LISTA DE ATENDIMENTOS                           -->
+            <!-- ============================================================ -->
+            <div class="p-6 lg:p-10 max-w-7xl mx-auto w-full" id="main-content">
+                
+                <!-- Barra de Ferramentas e Filtros -->
+                <div class="flex flex-col gap-4 mb-6">
+                    
+                    <!-- Linha Superior: Busca e Botão Atualizar -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full sm:w-96">
+                            <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                            <input type="text" id="search-input" onkeyup="filtrarTabela()" placeholder="Buscar por paciente ou Astra..." 
+                                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:border-bioteste-primary focus:ring-bioteste-primary text-sm">
+                        </div>
+                        <button onclick="carregarAtendimentos()" class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium shadow-sm w-full sm:w-auto justify-center active:scale-95">
+                            <span class="material-symbols-outlined text-lg">refresh</span>
+                            Atualizar Lista
+                        </button>
+                    </div>
+
+                    <!-- Linha Inferior: Filtros de Data -->
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3 text-gray-500">
+                            <span class="material-symbols-outlined text-lg">filter_alt</span>
+                            <span class="text-xs font-bold uppercase tracking-wider">Filtros de Data</span>
+                            <button onclick="limparFiltros()" class="ml-auto text-xs text-bioteste-primary hover:underline">Limpar Filtros</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs text-gray-500 font-medium">Entrada (De)</label>
+                                <input type="date" id="filtro-entrada-inicio" onchange="filtrarTabela()" class="form-input py-1.5 px-3 rounded-lg border-gray-200 text-sm focus:border-bioteste-primary focus:ring-bioteste-primary">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs text-gray-500 font-medium">Entrada (Até)</label>
+                                <input type="date" id="filtro-entrada-fim" onchange="filtrarTabela()" class="form-input py-1.5 px-3 rounded-lg border-gray-200 text-sm focus:border-bioteste-primary focus:ring-bioteste-primary">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-xs text-gray-500 font-medium">Previsão Resultado</label>
+                                <input type="date" id="filtro-resultado" onchange="filtrarTabela()" class="form-input py-1.5 px-3 rounded-lg border-gray-200 text-sm focus:border-bioteste-primary focus:ring-bioteste-primary bg-yellow-50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Dados -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 border-b border-gray-100">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Data Entrada</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Paciente</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Contato</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Nº Astra</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700">Previsão</th>
+                                    <th class="px-6 py-4 font-semibold text-gray-700 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-corpo" class="divide-y divide-gray-50">
+                                <!-- Skeleton Loading -->
+                                <tr class="animate-pulse">
+                                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+                                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+                                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
+                                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
+                                    <td class="px-6 py-4 text-right"><div class="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden p-12 text-center">
+                        <div class="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                            <span class="material-symbols-outlined text-gray-400 text-3xl">filter_list_off</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900">Nenhum resultado encontrado</h3>
+                        <p class="text-gray-500 text-sm mt-1">Tente ajustar os filtros ou a busca.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS (Segurança + Layout) -->
+    <script src="art.secure.js"></script>
+    <script src="layout.js"></script>
+
+    <!-- 5. LÓGICA DA PÁGINA -->
+    <script>
+        // API Específica desta página (Mantida a original)
+        const API_ATENDIMENTOS = "https://script.google.com/macros/s/AKfycbxudaVlzfd5t89j_WvWbpRPzTzT46sUI8SviFQNmm3K4XXSye3IMPPIPpsj3wHFcb0mbw/exec";
+        // API de Notificações (Nova)
+        const API_NOTIFICACOES = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec";
+        
+        let listaCompleta = [];
+
+        window.onload = function() {
+            // 1. Inicializa o Motor de Layout
+            if (typeof BiotesteLayout !== 'undefined') {
+                BiotesteLayout.init('listar'); // ID do menu ativo
+                initPage();
+            } else {
+                alert("Erro crítico: layout.js não carregado.");
+            }
+        };
+
+        function initPage() {
+            carregarNotificacoes();
+            carregarAtendimentos();
+        }
+
+        // --- Lógica de Dados ---
+
+        async function carregarAtendimentos() {
+            const tbody = document.getElementById('tabela-corpo');
+            const emptyState = document.getElementById('empty-state');
+            
+            // Pega unidade do layout ou padrão
+            const unidade = BiotesteLayout.user ? BiotesteLayout.user.unidade : 'Matriz';
+            
+            tbody.innerHTML = `
+                <tr class="animate-pulse"><td class="px-6 py-4" colspan="6"><div class="flex justify-center gap-2"><div class="h-2 w-2 bg-bioteste-primary rounded-full animate-bounce"></div><div class="h-2 w-2 bg-bioteste-primary rounded-full animate-bounce delay-75"></div><div class="h-2 w-2 bg-bioteste-primary rounded-full animate-bounce delay-150"></div></div></td></tr>
+            `;
+            emptyState.classList.add('hidden');
+
+            try {
+                const url = `${API_ATENDIMENTOS}?acao=trazerPorUnidade&unidade=${encodeURIComponent(unidade)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Falha na conexão");
+
+                const result = await response.json();
+
+                if (result.status === "sucesso" && Array.isArray(result.dados)) {
+                    listaCompleta = result.dados.reverse(); 
+                    filtrarTabela();
+                } else {
+                    tbody.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    document.querySelector('#empty-state h3').textContent = "Nenhum atendimento encontrado";
+                }
+
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Erro ao carregar dados. Tente novamente.</td></tr>`;
+            }
+        }
+
+        function renderizarTabela(dados) {
+            const tbody = document.getElementById('tabela-corpo');
+            const emptyState = document.getElementById('empty-state');
+            
+            tbody.innerHTML = '';
+
+            if (dados.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+
+            dados.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition-colors group";
+                
+                const dataEntrada = formatarData(item.dataEntrada);
+                const astra = item.numeroAtendimento || '-';
+                const previsao = formatarData(item.dataResultado);
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-gray-600 text-sm font-medium">${dataEntrada}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-medium text-gray-900">${item.nomePaciente}</div>
+                        <div class="text-xs text-gray-400 lg:hidden">Astra: ${astra}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 text-xs font-mono">${item.celular}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                            ${astra}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 text-xs">${previsao}</td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="inline-flex items-center gap-1 text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            Recebido
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filtrarTabela() {
+            const termo = document.getElementById('search-input').value.toLowerCase();
+            const dataEntradaInicio = document.getElementById('filtro-entrada-inicio').value;
+            const dataEntradaFim = document.getElementById('filtro-entrada-fim').value;
+            const dataResultadoFiltro = document.getElementById('filtro-resultado').value;
+            
+            const filtrados = listaCompleta.filter(item => {
+                // Filtro de Texto
+                const nome = (item.nomePaciente || '').toLowerCase();
+                const astra = (item.numeroAtendimento || '').toLowerCase();
+                const matchTexto = nome.includes(termo) || astra.includes(termo);
+                if (!matchTexto) return false;
+
+                // Filtro Data Entrada
+                if (dataEntradaInicio || dataEntradaFim) {
+                    const dataEntradaItem = converterParaDate(item.dataEntrada);
+                    if (dataEntradaItem) {
+                        dataEntradaItem.setHours(0,0,0,0);
+                        if (dataEntradaInicio) {
+                            const inicio = new Date(dataEntradaInicio + 'T00:00:00');
+                            if (dataEntradaItem < inicio) return false;
+                        }
+                        if (dataEntradaFim) {
+                            const fim = new Date(dataEntradaFim + 'T00:00:00');
+                            if (dataEntradaItem > fim) return false;
+                        }
+                    }
+                }
+
+                // Filtro Data Resultado
+                if (dataResultadoFiltro) {
+                    const dataResultadoItem = converterParaDate(item.dataResultado);
+                    const filtroRes = new Date(dataResultadoFiltro + 'T00:00:00');
+                    if (!dataResultadoItem) return false;
+                    dataResultadoItem.setHours(0,0,0,0);
+                    if (dataResultadoItem.getTime() !== filtroRes.getTime()) return false;
+                }
+
+                return true;
+            });
+
+            renderizarTabela(filtrados);
+        }
+
+        function limparFiltros() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filtro-entrada-inicio').value = '';
+            document.getElementById('filtro-entrada-fim').value = '';
+            document.getElementById('filtro-resultado').value = '';
+            filtrarTabela();
+        }
+
+        // --- Notificações (Cópia Robusta) ---
+        async function carregarNotificacoes() {
+            const container = document.getElementById('lista-notificacoes');
+            const badge = document.getElementById('notificacao-badge');
+            if(!container || !badge) return;
+
+            const unidadeUsuario = (BiotesteLayout?.user?.unidade || '').toLowerCase().trim();
+
+            try {
+                const url = `${API_NOTIFICACOES}?action=get`; 
+                const response = await fetch(url);
+                const result = await response.json();
+                const dados = result.data || [];
+
+                container.innerHTML = '';
+                
+                const filtrados = dados.filter(n => {
+                    const u = (n.unidade || '').toLowerCase().trim();
+                    return u === unidadeUsuario || u === 'todos' || u === 'todas';
+                });
+
+                let temRecente = false;
+                const hoje = new Date(); hoje.setHours(0,0,0,0);
+                const ontem = new Date(); ontem.setDate(hoje.getDate() - 1); ontem.setHours(0,0,0,0);
+
+                if (filtrados.length > 0) {
+                    badge.classList.remove('hidden');
+                    filtrados.forEach(n => {
+                        const d = converterParaDate(n.criado_em);
+                        if(d) {
+                            d.setHours(0,0,0,0);
+                            if(d.getTime() === hoje.getTime() || d.getTime() === ontem.getTime()) temRecente = true;
+                        }
+                        const div = document.createElement('div');
+                        div.className = "p-3 border-b border-gray-50 hover:bg-blue-50";
+                        div.innerHTML = `<p class="text-sm text-gray-800">${n.texto_notificacao}</p>`;
+                        container.appendChild(div);
+                    });
+                    badge.className = temRecente 
+                        ? "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-yellow-500"
+                        : "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500";
+                } else {
+                    badge.classList.add('hidden');
+                    container.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">Sem notificações.</div>';
+                }
+            } catch (e) { console.warn(e); }
+        }
+
+        // --- Utilitários ---
+        function converterParaDate(dataString) {
+            if (!dataString) return null;
+            if (dataString.includes('-')) return new Date(dataString); // ISO
+            if (dataString.includes('/')) { // BR
+                const partes = dataString.split('/');
+                if(partes.length === 3) return new Date(partes[2], partes[1]-1, partes[0]);
+            }
+            return null;
+        }
+
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            if (dataString.match(/^\d{2}\/\d{2}\/\d{4}/)) return dataString;
+            try {
+                const d = new Date(dataString);
+                if (isNaN(d.getTime())) return dataString;
+                const dia = String(d.getDate()).padStart(2, '0');
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const ano = d.getFullYear();
+                const hora = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                if(hora === '00' && min === '00') return `${dia}/${mes}/${ano}`;
+                return `${dia}/${mes}/${ano} ${hora}:${min}`;
+            } catch (e) { return dataString; }
+        }
+    </script>
+</body>
+</html>

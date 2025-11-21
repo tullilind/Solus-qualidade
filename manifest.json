@@ -1,0 +1,21 @@
+{
+  "name": "Bioteste Solus - Sistema de Gestão",
+  "short_name": "Solus",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f7f8",
+  "theme_color": "#005A9C",
+  "description": "Sistema de gestão laboratorial e controle de qualidade.",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "logo.png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "logo.png"
+    }
+  ]
+}

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Novo Atendimento</title>
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* Estilos Base */
+        body { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        body.loaded { visibility: visible; opacity: 1; }
+        
+        /* Tooltip personalizado */
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .group:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Animações de Status da Fila */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .status-sending { animation: pulse-soft 1.5s infinite; }
+
+        /* Modal Tutorial */
+        #modal-tutorial {
+            transition: opacity 0.3s ease-in-out, visibility 0.3s;
+        }
+        #modal-tutorial.hidden-modal {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- Container de Notificações (Toast) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MODAL TUTORIAL (Mantido) -->
+    <div id="modal-tutorial" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden-modal">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden transform transition-all scale-100">
+            <div class="bg-bioteste-primary p-6 text-white flex items-center gap-4">
+                <div class="bg-white/20 p-3 rounded-full">
+                    <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold">Novidade: Fila Inteligente</h3>
+                    <p class="text-white/80 text-sm">Mais velocidade para o seu atendimento.</p>
+                </div>
+            </div>
+            <div class="p-8 space-y-6">
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-bioteste-primary text-2xl mt-1">speed</span>
+                    <div>
+                        <h4 class="font-bold text-gray-800">Não espere carregar</h4>
+                        <p class="text-sm text-gray-600">Agora você pode clicar em <strong>"Adicionar à Fila"</strong> e cadastrar o próximo paciente imediatamente.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-bioteste-primary text-2xl mt-1">sync</span>
+                    <div>
+                        <h4 class="font-bold text-gray-800">Sincronização Automática</h4>
+                        <p class="text-sm text-gray-600">O sistema envia os dados em segundo plano. Você pode acompanhar o status na lista abaixo do formulário.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-orange-500 text-2xl mt-1">wifi_off</span>
+                    <div>
+                        <h4 class="font-bold text-gray-800">Proteção contra falhas</h4>
+                        <p class="text-sm text-gray-600">Se a internet cair ou der erro, o sistema salva os dados e tenta enviar novamente sozinho.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button onclick="fecharTutorial()" class="bg-bioteste-primary hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Ok, estou ciente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar (Injetado) -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header (Injetado) -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- ============================================================ -->
+            <!-- 3. CONTEÚDO: FORMULÁRIO DE ATENDIMENTO                       -->
+            <!-- ============================================================ -->
+            <div class="p-6 lg:p-10 max-w-3xl mx-auto w-full pb-24" id="main-content">
+                
+                <!-- Formulário -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mb-8">
+                    <div class="mb-6 border-b border-gray-100 pb-4">
+                        <h1 class="text-2xl font-bold text-bioteste-text-heading">Registro de Paciente</h1>
+                        <p class="text-sm text-bioteste-text-body mt-1">Preencha os dados. O sistema sincroniza automaticamente em segundo plano.</p>
+                    </div>
+
+                    <form onsubmit="adicionarNaFila(event)" class="flex flex-col gap-6" id="form-atendimento">
+                        
+                        <!-- Linha 1: Dados do Paciente -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700">Nome do Paciente <span class="text-red-500">*</span></label>
+                                <input type="text" id="nomePaciente" required class="form-input rounded-lg border-gray-300 focus:border-bioteste-primary focus:ring-bioteste-primary" placeholder="Nome completo">
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700">Celular (WhatsApp) <span class="text-red-500">*</span></label>
+                                <input type="tel" id="celular" required maxlength="15" onkeyup="mascaraCelular(this)" class="form-input rounded-lg border-gray-300 focus:border-bioteste-primary focus:ring-bioteste-primary" placeholder="(DD) 99999-9999">
+                                <p class="text-xs text-gray-400">Obrigatório DDD</p>
+                            </div>
+                        </div>
+
+                        <!-- Linha 2: Dados do Sistema (Unidade e Atendente - Bloqueados) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700">Unidade de Origem</label>
+                                <div class="relative">
+                                    <input type="text" id="unidade" readonly class="form-input w-full rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" value="Carregando...">
+                                    <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 text-lg">domain</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700">Atendente Responsável</label>
+                                <div class="relative">
+                                    <input type="text" id="atendente" readonly class="form-input w-full rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" value="Carregando...">
+                                    <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 text-lg">person</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Linha 3: Astra (Opcional) e Data Resultado -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-gray-700">
+                                    Nº Atendimento (Astra) <span class="text-xs text-gray-400 font-normal ml-1">(Opcional)</span>
+                                </label>
+                                <input type="text" id="numeroAtendimento" class="form-input rounded-lg border-gray-300 focus:border-bioteste-primary focus:ring-bioteste-primary" placeholder="Ex: ABC-123">
+                            </div>
+                            
+                            <div class="flex flex-col gap-2 relative group">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-sm font-semibold text-gray-700">Previsão de Resultado <span class="text-red-500">*</span></label>
+                                    
+                                    <!-- Ícone Tooltip -->
+                                    <div class="relative inline-block">
+                                        <span class="material-symbols-outlined text-gray-400 text-lg cursor-help hover:text-bioteste-primary transition-colors">help</span>
+                                        <div class="tooltip absolute z-10 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl -top-2 left-8 pointer-events-none">
+                                            Aqui vai ser a data que o paciente vai receber o resultado. Caso urgência e sair antes, coloque então essa data.
+                                            <div class="absolute w-2 h-2 bg-gray-800 transform rotate-45 top-3 -left-1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="date" id="dataResultado" required class="form-input rounded-lg border-gray-300 focus:border-bioteste-primary focus:ring-bioteste-primary text-gray-700">
+                            </div>
+                        </div>
+
+                        <hr class="border-gray-100 my-2">
+
+                        <!-- Botões -->
+                        <div class="flex items-center justify-end gap-4">
+                            <button type="button" onclick="window.location.href='painel.solus.bioteste.html'" class="px-6 py-3 rounded-lg text-gray-600 font-medium hover:bg-gray-100 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" id="btn-salvar" class="px-6 py-3 rounded-lg bg-bioteste-primary text-white font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                                <span class="material-symbols-outlined">queue</span>
+                                <span>Adicionar à Fila</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Área da Fila de Sincronização -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-bioteste-primary">sync_alt</span>
+                            Fila de Envio
+                        </h2>
+                        <span class="text-xs text-gray-400" id="status-geral">Sincronizando...</span>
+                    </div>
+                    
+                    <div class="overflow-hidden">
+                        <ul id="lista-fila" class="divide-y divide-gray-100">
+                            <!-- Itens da fila aparecerão aqui -->
+                            <li class="py-4 text-center text-sm text-gray-400">A fila está vazia.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS (Segurança + Layout) -->
+    <script src="art.secure.js"></script>
+    <script src="layout.js"></script>
+
+    <!-- 5. LÓGICA DA PÁGINA -->
+    <script>
+        const API_ATENDIMENTO = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+        const API_NOTIFICACOES = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec"; // API Notificações
+        
+        const QUEUE_KEY = 'bioteste_fila_atendimentos';
+        const TUTORIAL_KEY = 'bioteste_tutorial_fila_v1';
+        let isSyncing = false;
+
+        window.onload = function() {
+            // 1. Inicializa o Motor de Layout
+            if (typeof BiotesteLayout !== 'undefined') {
+                BiotesteLayout.init('novo'); // ID do menu ativo
+                initPage();
+            } else {
+                alert("Erro crítico: layout.js não carregado.");
+            }
+        };
+
+        function initPage() {
+            const userData = BiotesteLayout.user || {};
+
+            // Preencher formulário com dados do usuário logado
+            document.getElementById('unidade').value = userData.unidade || 'Matriz';
+            document.getElementById('atendente').value = userData.nome || 'Não identificado';
+
+            // Verificar Tutorial
+            verificarTutorial();
+
+            // Inicializar
+            carregarNotificacoes(); // Badge do header
+            renderizarFila();
+            processarFila();
+        }
+
+        // --- TUTORIAL NOVIDADES ---
+        function verificarTutorial() {
+            if (!localStorage.getItem(TUTORIAL_KEY)) {
+                document.getElementById('modal-tutorial').classList.remove('hidden-modal');
+            }
+        }
+
+        function fecharTutorial() {
+            localStorage.setItem(TUTORIAL_KEY, 'true');
+            document.getElementById('modal-tutorial').classList.add('hidden-modal');
+        }
+
+        // --- SISTEMA DE FILA (OFFLINE-FIRST) ---
+
+        function getFila() {
+            const fila = localStorage.getItem(QUEUE_KEY);
+            return fila ? JSON.parse(fila) : [];
+        }
+
+        function saveFila(fila) {
+            localStorage.setItem(QUEUE_KEY, JSON.stringify(fila));
+            renderizarFila();
+        }
+
+        function adicionarNaFila(event) {
+            event.preventDefault();
+            
+            const celular = document.getElementById('celular').value;
+            if (celular.length < 14) {
+                mostrarNotificacao('error', 'Celular incompleto. Informe DDD + Número.');
+                return;
+            }
+
+            const dataInput = document.getElementById('dataResultado').value;
+            const [ano, mes, dia] = dataInput.split('-');
+            const dataFormatada = `${dia}/${mes}/${ano}`;
+            const celularLimpo = celular.replace(/\D/g, '');
+
+            const novoItem = {
+                id: Date.now(),
+                status: 'pendente',
+                tentativas: 0,
+                dados: {
+                    acao: "registra",
+                    nomePaciente: document.getElementById('nomePaciente').value,
+                    celular: celularLimpo,
+                    unidade: document.getElementById('unidade').value,
+                    atendente: document.getElementById('atendente').value,
+                    dataResultado: dataFormatada,
+                    numeroAtendimento: document.getElementById('numeroAtendimento').value || "Sem Astra"
+                }
+            };
+
+            const fila = getFila();
+            fila.push(novoItem);
+            saveFila(fila);
+
+            mostrarNotificacao('success', 'Adicionado à fila de envio!');
+
+            // Reset form
+            document.getElementById('nomePaciente').value = '';
+            document.getElementById('celular').value = '';
+            document.getElementById('numeroAtendimento').value = '';
+            document.getElementById('nomePaciente').focus();
+
+            if (!isSyncing) processarFila();
+        }
+
+        async function processarFila() {
+            if (isSyncing) return;
+            
+            const fila = getFila();
+            const pendentes = fila.filter(item => item.status === 'pendente' || item.status === 'erro');
+
+            if (pendentes.length === 0) {
+                document.getElementById('status-geral').textContent = 'Todos sincronizados';
+                return;
+            }
+
+            isSyncing = true;
+            document.getElementById('status-geral').textContent = 'Sincronizando...';
+
+            const itemAtual = pendentes[0];
+            itemAtual.status = 'enviando';
+            const index = fila.findIndex(i => i.id === itemAtual.id);
+            if (index !== -1) fila[index] = itemAtual;
+            saveFila(fila);
+
+            try {
+                const params = new URLSearchParams(itemAtual.dados);
+                const response = await fetch(`${API_ATENDIMENTO}?${params.toString()}`, { method: 'GET' });
+                const result = await response.json();
+
+                if (result.status === 'sucesso') {
+                    const novaFila = getFila().filter(i => i.id !== itemAtual.id);
+                    saveFila(novaFila);
+                    
+                    setTimeout(() => {
+                        isSyncing = false;
+                        processarFila(); 
+                    }, 2000); 
+                } else {
+                    throw new Error(result.mensagem);
+                }
+
+            } catch (erro) {
+                console.error("Erro no envio:", erro);
+                const filaAtualizada = getFila();
+                const idx = filaAtualizada.findIndex(i => i.id === itemAtual.id);
+                if (idx !== -1) {
+                    filaAtualizada[idx].status = 'erro';
+                    filaAtualizada[idx].tentativas++;
+                }
+                saveFila(filaAtualizada);
+
+                setTimeout(() => {
+                    isSyncing = false;
+                    processarFila(); 
+                }, 5000); 
+            }
+        }
+
+        function renderizarFila() {
+            const lista = document.getElementById('lista-fila');
+            const fila = getFila();
+
+            if (fila.length === 0) {
+                lista.innerHTML = '<li class="py-4 text-center text-sm text-gray-400">Fila vazia. Todos os dados enviados.</li>';
+                return;
+            }
+
+            lista.innerHTML = '';
+            fila.forEach(item => {
+                let statusHtml = '', statusClass = '';
+
+                if (item.status === 'pendente') {
+                    statusHtml = '<span class="text-yellow-600 text-xs font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">hourglass_empty</span> Aguardando</span>';
+                    statusClass = 'bg-yellow-50 border-l-4 border-yellow-400';
+                } else if (item.status === 'enviando') {
+                    statusHtml = '<span class="text-blue-600 text-xs font-bold flex items-center gap-1 status-sending"><span class="material-symbols-outlined text-sm animate-spin">refresh</span> Enviando...</span>';
+                    statusClass = 'bg-blue-50 border-l-4 border-blue-400';
+                } else if (item.status === 'erro') {
+                    statusHtml = `<span class="text-red-600 text-xs font-bold flex items-center gap-1"><span class="material-symbols-outlined text-sm">error</span> Erro (Tentativa ${item.tentativas})</span>`;
+                    statusClass = 'bg-red-50 border-l-4 border-red-400';
+                }
+
+                const li = document.createElement('li');
+                li.className = `p-3 mb-2 rounded shadow-sm ${statusClass} flex justify-between items-center`;
+                li.innerHTML = `
+                    <div>
+                        <p class="font-bold text-sm text-gray-800">${item.dados.nomePaciente}</p>
+                        <p class="text-xs text-gray-500">Astra: ${item.dados.numeroAtendimento} • Prev: ${item.dados.dataResultado}</p>
+                    </div>
+                    <div>${statusHtml}</div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        // --- Funções Auxiliares ---
+
+        function mascaraCelular(input) {
+            let v = input.value.replace(/\D/g, ""); 
+            v = v.replace(/^(\d\d)(\d)/g, "($1) $2"); 
+            v = v.replace(/(\d{5})(\d)/, "$1-$2"); 
+            input.value = v;
+        }
+
+        function mostrarNotificacao(type, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 animate-bounce pointer-events-auto`;
+            toast.innerHTML = `<span class="material-symbols-outlined">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Notificações (Para o badge do header funcionar)
+        async function carregarNotificacoes() {
+            const container = document.getElementById('lista-notificacoes');
+            const badge = document.getElementById('notificacao-badge');
+            if(!container || !badge) return;
+
+            const unidadeUsuario = (BiotesteLayout?.user?.unidade || '').toLowerCase().trim();
+
+            try {
+                const url = `${API_NOTIFICACOES}?action=get`; 
+                const response = await fetch(url);
+                const result = await response.json();
+                const todosDados = result.data || [];
+                
+                const notificacoesFiltradas = todosDados.filter(n => {
+                    const uNotificacao = (n.unidade || '').toLowerCase().trim();
+                    return uNotificacao === unidadeUsuario || uNotificacao === 'todos' || uNotificacao === 'todas';
+                });
+
+                if (notificacoesFiltradas.length > 0) {
+                    badge.classList.remove('hidden');
+                    // Lógica simples de badge vermelho para manter consistência
+                    badge.className = "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500";
+                    
+                    // Preenche lista (opcional, layout.js já tem estrutura mas pode estar vazio)
+                    container.innerHTML = '';
+                    notificacoesFiltradas.forEach(n => {
+                         const div = document.createElement('div');
+                         div.className = "p-3 border-b border-gray-50 hover:bg-blue-50";
+                         div.innerHTML = `<p class="text-sm text-gray-800">${n.texto_notificacao}</p>`;
+                         container.appendChild(div);
+                    });
+                } else {
+                    badge.classList.add('hidden');
+                }
+            } catch (e) { console.warn(e); }
+        }
+
+    </script>
+</body>
+</html>

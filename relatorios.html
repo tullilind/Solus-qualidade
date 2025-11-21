@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Relatório Geral</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    
+    <!-- 1. DEPENDÊNCIAS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* Estilos Base */
+        .chart-bar { transition: height 1s ease-out; }
+        
+        /* ESTILOS DE IMPRESSÃO (PDF) - Mantidos e ajustados para o novo layout */
+        @media print {
+            body { visibility: visible !important; opacity: 1 !important; background-color: white; }
+            /* Esconde elementos do layout novo */
+            #app-sidebar, #app-header, #filtros-container, .no-print, #art-secure-badge { display: none !important; }
+            
+            main { margin-left: 0 !important; padding: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+            #main-content { padding: 0 !important; max-width: none !important; }
+            
+            .print-header { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #005A9C; padding-bottom: 10px; }
+            .page-break { page-break-inside: avoid; margin-bottom: 20px; border: 1px solid #ddd; }
+            
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #ddd !important; padding: 6px !important; font-size: 9pt !important; }
+            th { background-color: #f0f0f0 !important; color: black !important; -webkit-print-color-adjust: exact; }
+        }
+        .print-header { display: none; }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- 2. ESTRUTURA DO LAYOUT -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar (Injetado) -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header (Injetado) -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- ============================================================ -->
+            <!-- 3. CONTEÚDO DA PÁGINA DE RELATÓRIOS                          -->
+            <!-- ============================================================ -->
+            <div class="p-6 lg:p-10 max-w-7xl mx-auto w-full" id="main-content">
+                
+                <!-- Cabeçalho Exclusivo de Impressão -->
+                <div class="print-header">
+                    <h1 class="text-2xl font-bold text-bioteste-primary">Relatório de Atendimentos - Bioteste</h1>
+                    <p id="print-date" class="text-sm text-gray-500">Gerado em: --/--/----</p>
+                </div>
+
+                <!-- Título da Página (Tela) -->
+                <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
+                    <div>
+                        <h1 class="text-bioteste-text-heading text-3xl font-black tracking-tight">Relatório Geral</h1>
+                        <p class="text-bioteste-text-body mt-1">Visualize, filtre e imprima o histórico completo de atendimentos.</p>
+                    </div>
+                    <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2 bg-bioteste-primary text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm active:scale-95">
+                        <span class="material-symbols-outlined">print</span>
+                        <span>Imprimir PDF</span>
+                    </button>
+                </div>
+                
+                <!-- Área de Alertas -->
+                <div id="alertas-container" class="mb-6 hidden no-print">
+                    <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-r-lg shadow-sm">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <span class="material-symbols-outlined text-orange-500">warning</span>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-bold text-orange-800">Atenção: Liberação de Resultados Hoje</h3>
+                                <div class="mt-2 text-sm text-orange-700">
+                                    <ul id="lista-alertas" class="list-disc list-inside space-y-1">
+                                        <!-- Lista dinâmica -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div id="filtros-container" class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-8 no-print">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-800 font-bold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">filter_alt</span> Filtros
+                        </h3>
+                        <button onclick="limparFiltros()" class="text-xs text-bioteste-primary hover:underline font-medium">Limpar tudo</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Busca Textual</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-2.5 top-2 text-gray-400 text-lg">search</span>
+                                <input type="text" id="search-input" onkeyup="aplicarFiltros()" placeholder="Paciente, Astra..." class="w-full pl-9 pr-3 py-1.5 rounded-lg border-gray-300 text-sm focus:ring-bioteste-primary focus:border-bioteste-primary">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Unidade</label>
+                            <select id="filtro-unidade" onchange="aplicarFiltros()" class="w-full py-1.5 px-3 rounded-lg border-gray-300 text-sm focus:ring-bioteste-primary focus:border-bioteste-primary bg-white">
+                                <option value="">Todas as Unidades</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Entrada (De)</label>
+                            <input type="date" id="filtro-entrada-inicio" onchange="aplicarFiltros()" class="w-full py-1.5 px-3 rounded-lg border-gray-300 text-sm focus:ring-bioteste-primary focus:border-bioteste-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Entrada (Até)</label>
+                            <input type="date" id="filtro-entrada-fim" onchange="aplicarFiltros()" class="w-full py-1.5 px-3 rounded-lg border-gray-300 text-sm focus:ring-bioteste-primary focus:border-bioteste-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Previsão Resultado</label>
+                            <input type="date" id="filtro-resultado" onchange="aplicarFiltros()" class="w-full py-1.5 px-3 rounded-lg border-gray-300 text-sm focus:ring-bioteste-primary focus:border-bioteste-primary bg-yellow-50">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container do Relatório -->
+                <div id="relatorio-conteudo" class="space-y-8">
+                    <!-- Skeleton Loader -->
+                    <div class="animate-pulse space-y-4">
+                        <div class="h-8 bg-gray-200 rounded w-1/3"></div>
+                        <div class="h-40 bg-gray-100 rounded-xl border border-gray-200"></div>
+                        <div class="h-8 bg-gray-200 rounded w-1/4"></div>
+                        <div class="h-40 bg-gray-100 rounded-xl border border-gray-200"></div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden p-12 text-center border-2 border-dashed border-gray-200 rounded-xl">
+                    <span class="material-symbols-outlined text-4xl text-gray-300 mb-2">folder_off</span>
+                    <p class="text-gray-500">Nenhum registro encontrado para os filtros selecionados.</p>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS (Segurança + Layout) -->
+    <script src="art.secure.js"></script>
+    <script src="layout.js"></script>
+
+    <!-- 5. LÓGICA DA PÁGINA -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+        
+        let dadosGlobais = [];
+
+        window.onload = function() {
+            // 1. Inicializa o Motor de Layout
+            if (typeof BiotesteLayout !== 'undefined') {
+                BiotesteLayout.init('relatorios'); // ID do menu ativo
+                initPage();
+            } else {
+                alert("Erro crítico: layout.js não carregado.");
+            }
+        };
+
+        function initPage() {
+            // Configura data de impressão com nome do usuário
+            const userData = BiotesteLayout.user || {};
+            const dataStr = new Date().toLocaleString('pt-BR');
+            const userStr = userData.nome ? ` - Emitido por: ${userData.nome}` : '';
+            
+            const printDateEl = document.getElementById('print-date');
+            if(printDateEl) printDateEl.textContent = `Gerado em: ${dataStr}${userStr}`;
+
+            carregarDadosGerais();
+        }
+
+        async function carregarDadosGerais() {
+            try {
+                const response = await fetch(`${API_URL}?acao=trazerTodos`);
+                const result = await response.json();
+
+                if (result.status === 'sucesso' && Array.isArray(result.dados)) {
+                    dadosGlobais = result.dados;
+                    
+                    // Inicializa filtros e renderiza
+                    preencherFiltroUnidades(dadosGlobais);
+                    verificarAlertas(dadosGlobais);
+                    aplicarFiltros(); 
+                } else {
+                    document.getElementById('relatorio-conteudo').innerHTML = '<p class="text-center text-red-500 py-8">Não foi possível carregar os dados.</p>';
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('relatorio-conteudo').innerHTML = '<p class="text-center text-red-500 py-8">Erro de conexão com o servidor.</p>';
+            }
+        }
+
+        function preencherFiltroUnidades(dados) {
+            const select = document.getElementById('filtro-unidade');
+            const unidades = [...new Set(dados.map(item => item.unidade || 'Indefinida'))].sort();
+            
+            select.innerHTML = '<option value="">Todas as Unidades</option>';
+            unidades.forEach(unidade => {
+                if(unidade) {
+                    const option = document.createElement('option');
+                    option.value = unidade;
+                    option.textContent = unidade;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        function verificarAlertas(dados) {
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            const alertasPorUnidade = {};
+            let temAlerta = false;
+
+            dados.forEach(item => {
+                const dataRes = converterParaDate(item.dataResultado);
+                if (dataRes) {
+                    dataRes.setHours(0,0,0,0);
+                    if (dataRes.getTime() <= hoje.getTime()) {
+                        const unid = item.unidade || 'Indefinida';
+                        if (!alertasPorUnidade[unid]) alertasPorUnidade[unid] = 0;
+                        alertasPorUnidade[unid]++;
+                        temAlerta = true;
+                    }
+                }
+            });
+
+            if (temAlerta) {
+                const container = document.getElementById('alertas-container');
+                const lista = document.getElementById('lista-alertas');
+                lista.innerHTML = '';
+                for (const [unidade, qtd] of Object.entries(alertasPorUnidade)) {
+                    lista.innerHTML += `<li><strong>${unidade}:</strong> ${qtd} exames com prazo vencendo ou vencido.</li>`;
+                }
+                container.classList.remove('hidden');
+            }
+        }
+
+        function aplicarFiltros() {
+            const termo = document.getElementById('search-input').value.toLowerCase();
+            const ini = document.getElementById('filtro-entrada-inicio').value;
+            const fim = document.getElementById('filtro-entrada-fim').value;
+            const res = document.getElementById('filtro-resultado').value;
+            const unidadeSelecionada = document.getElementById('filtro-unidade').value;
+
+            const filtrados = dadosGlobais.filter(item => {
+                if (unidadeSelecionada && item.unidade !== unidadeSelecionada) return false;
+
+                const textoMatch = (item.nomePaciente||'').toLowerCase().includes(termo) || 
+                                   (item.numeroAtendimento||'').toLowerCase().includes(termo) ||
+                                   (item.atendente||'').toLowerCase().includes(termo);
+                if(!textoMatch) return false;
+
+                if(ini || fim) {
+                    const dEntrada = converterParaDate(item.dataEntrada);
+                    if(dEntrada) {
+                        dEntrada.setHours(0,0,0,0);
+                        if(ini && dEntrada < new Date(ini+'T00:00:00')) return false;
+                        if(fim && dEntrada > new Date(fim+'T00:00:00')) return false;
+                    }
+                }
+
+                if(res) {
+                    const dRes = converterParaDate(item.dataResultado);
+                    if(dRes) {
+                        dRes.setHours(0,0,0,0);
+                        if(dRes.getTime() !== new Date(res+'T00:00:00').getTime()) return false;
+                    } else return false;
+                }
+                return true;
+            });
+
+            renderizarRelatorio(filtrados);
+        }
+
+        function renderizarRelatorio(dados) {
+            const container = document.getElementById('relatorio-conteudo');
+            const empty = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (dados.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            const grupos = {};
+            dados.forEach(item => {
+                const u = item.unidade || 'Sem Unidade';
+                if (!grupos[u]) grupos[u] = [];
+                grupos[u].push(item);
+            });
+
+            for (const [unidade, itens] of Object.entries(grupos)) {
+                const section = document.createElement('div');
+                section.className = "bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden page-break mb-6";
+                
+                section.innerHTML = `
+                    <div class="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center print:bg-gray-100">
+                        <h3 class="font-bold text-bioteste-text-heading text-lg flex items-center gap-2">
+                            <span class="material-symbols-outlined text-bioteste-primary no-print">domain</span>
+                            ${unidade}
+                        </h3>
+                        <span class="bg-white px-3 py-1 rounded-full text-xs font-bold border border-gray-200 text-gray-600">
+                            ${itens.length} registros
+                        </span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-white border-b border-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3 font-semibold text-gray-600 w-32">Entrada</th>
+                                    <th class="px-6 py-3 font-semibold text-gray-600">Paciente</th>
+                                    <th class="px-6 py-3 font-semibold text-gray-600">Astra</th>
+                                    <th class="px-6 py-3 font-semibold text-gray-600">Atendente</th>
+                                    <th class="px-6 py-3 font-semibold text-gray-600 w-32">Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                ${itens.map(item => `
+                                    <tr class="hover:bg-gray-50 break-inside-avoid">
+                                        <td class="px-6 py-3 text-gray-500 font-mono text-xs">${formatarData(item.dataEntrada)}</td>
+                                        <td class="px-6 py-3 font-medium text-gray-800">${item.nomePaciente}</td>
+                                        <td class="px-6 py-3 text-blue-600 font-medium text-xs">${item.numeroAtendimento || '-'}</td>
+                                        <td class="px-6 py-3 text-gray-500 text-xs uppercase">${item.atendente || '-'}</td>
+                                        <td class="px-6 py-3 font-bold ${verificarPrazo(item.dataResultado)}">
+                                            ${formatarData(item.dataResultado)}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(section);
+            }
+        }
+
+        // --- Helpers ---
+        function verificarPrazo(dataString) {
+            const d = converterParaDate(dataString);
+            if (!d) return 'text-gray-600';
+            
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            d.setHours(0,0,0,0);
+
+            if (d.getTime() < hoje.getTime()) return 'text-red-600';
+            if (d.getTime() === hoje.getTime()) return 'text-orange-500';
+            return 'text-green-600';
+        }
+
+        function converterParaDate(dataString) {
+            if (!dataString) return null;
+            if (dataString.includes('-')) return new Date(dataString);
+            if (dataString.includes('/')) {
+                const partes = dataString.split('/');
+                if(partes.length === 3) return new Date(partes[2], partes[1]-1, partes[0]);
+            }
+            return null;
+        }
+
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            if (dataString.match(/^\d{2}\/\d{2}\/\d{4}/)) return dataString;
+            try {
+                const d = new Date(dataString);
+                if (isNaN(d.getTime())) return dataString;
+                const dia = String(d.getDate()).padStart(2, '0');
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const ano = d.getFullYear();
+                return `${dia}/${mes}/${ano}`;
+            } catch (e) { return dataString; }
+        }
+
+        function limparFiltros() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filtro-unidade').value = '';
+            document.getElementById('filtro-entrada-inicio').value = '';
+            document.getElementById('filtro-entrada-fim').value = '';
+            document.getElementById('filtro-resultado').value = '';
+            aplicarFiltros();
+        }
+    </script>
+</body>
+</html>

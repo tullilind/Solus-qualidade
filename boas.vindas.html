@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bem-vindo ao Novo Solus</title>
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+
+    <style>
+        body { background-color: #0f172a; color: white; overflow-x: hidden; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="font-display flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-bioteste-primary relative">
+
+    <!-- Background Effects -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div class="absolute top-10 right-10 w-64 h-64 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+        <div class="absolute bottom-10 left-10 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
+    </div>
+
+    <div class="max-w-5xl w-full mx-auto p-6 relative z-10">
+        
+        <!-- Header -->
+        <div class="text-center mb-12 animate-fade-in-up">
+            <div class="inline-flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full text-sm font-medium border border-white/20 mb-6">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Sistema Operacional • Versão 2.0
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black tracking-tight mb-4">
+                Olá, <span id="user-nome" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">Colaborador</span>!
+            </h1>
+            <p class="text-lg text-blue-100/80 max-w-2xl mx-auto">
+                Sua área de trabalho foi atualizada. Mais velocidade no cadastro e controle total da sua unidade.
+            </p>
+        </div>
+
+        <!-- Grid de Novidades -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            
+            <!-- Feature 1 -->
+            <div class="glass-card p-6 rounded-2xl hover:bg-white/10 transition-all duration-300 group animate-fade-in-up" style="animation-delay: 0.1s">
+                <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center text-green-400 mb-4 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">speed</span>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Fila Rápida (Offline)</h3>
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Não espere carregar. Cadastre pacientes instantaneamente e o sistema sincroniza em segundo plano. Sem travamentos.
+                </p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="glass-card p-6 rounded-2xl hover:bg-white/10 transition-all duration-300 group animate-fade-in-up" style="animation-delay: 0.2s">
+                <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">dashboard</span>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Controle Diário</h3>
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Novo painel com alertas de <strong>"Entrega Hoje"</strong>. Veja suas metas e pendências assim que entrar no sistema.
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="glass-card p-6 rounded-2xl hover:bg-white/10 transition-all duration-300 group animate-fade-in-up" style="animation-delay: 0.3s">
+                <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center text-red-400 mb-4 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">security</span>
+                </div>
+                <h3 class="text-xl font-bold mb-2">Segurança Ativa</h3>
+                <p class="text-sm text-gray-300 leading-relaxed">
+                    Seu acesso está protegido pelo <strong>ArtSecure</strong>. Lembre-se: o sistema é otimizado apenas para computadores desktop.
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up" style="animation-delay: 0.4s">
+            
+            <a href="pdfmanual.pdf" target="_blank" class="group relative inline-flex items-center justify-center gap-3 px-6 py-4 font-bold text-white transition-all duration-200 bg-white/10 border border-white/20 rounded-full hover:bg-white/20">
+                <span class="material-symbols-outlined">description</span>
+                <span>Baixar Manual PDF</span>
+            </a>
+
+            <button onclick="finalizarApresentacao()" class="group relative inline-flex items-center justify-center gap-3 px-8 py-4 font-bold text-white transition-all duration-200 bg-bioteste-primary rounded-full hover:bg-blue-600 hover:scale-105 focus:outline-none ring-offset-2 focus:ring-2 ring-blue-400 shadow-lg shadow-blue-500/50">
+                <span>Acessar Meu Painel</span>
+                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+
+        </div>
+        
+        <p class="mt-8 text-center text-slate-400 text-xs font-medium uppercase tracking-widest opacity-60 animate-fade-in-up" style="animation-delay: 0.5s">© 2025 Bioteste Solus • Tecnologia Laboratorial</p>
+
+    </div>
+
+    <!-- LÓGICA -->
+    <script>
+        let userId = 'unknown';
+
+        // 1. Verifica Auth e Redireciona se já viu
+        (function() {
+            try {
+                const storage = localStorage.getItem('bioteste_user');
+                if (!storage) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                const user = JSON.parse(storage);
+                userId = user.id;
+
+                // Preenche nome
+                if(user.nome) {
+                    const nome = user.nome.split(' ')[0];
+                    document.getElementById('user-nome').textContent = nome;
+                }
+
+                // Se for ADM, manda pra lá (caso tenha caído aqui por engano)
+                if (user.acesso === 'adm') {
+                    window.location.href = 'admqualidade/boasvindasadm.html';
+                    return;
+                }
+
+                // VERIFICAÇÃO: Já viu a intro v2.0?
+                const jaViu = localStorage.getItem(`bioteste_intro_v2_seen_${userId}`);
+                
+                if (jaViu === 'true') {
+                    // Redireciona para o Painel OPERACIONAL
+                    window.location.replace('painel.solus.bioteste.html');
+                } else {
+                    console.log("Primeiro acesso funcionário à versão 2.0.");
+                }
+
+            } catch (e) {
+                window.location.href = 'index.html';
+            }
+        })();
+
+        // 2. Ação do Botão
+        function finalizarApresentacao() {
+            // Grava que viu
+            if (userId) {
+                localStorage.setItem(`bioteste_intro_v2_seen_${userId}`, 'true');
+            }
+            
+            // Efeito de saída
+            document.body.style.transition = 'opacity 0.5s';
+            document.body.style.opacity = '0';
+
+            // Redireciona para o Painel OPERACIONAL
+            setTimeout(() => {
+                window.location.href = 'painel.solus.bioteste.html';
+            }, 500);
+        }
+    </script>
+</body>
+</html>

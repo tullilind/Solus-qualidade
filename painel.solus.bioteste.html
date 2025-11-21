@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste Solus - Dashboard</title>
+    <link rel="icon" type="image/png" href="logo.png">
+
+    <!-- 1. DEPENDÊNCIAS (Tailwind e Fontes) -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+    <!-- Config do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bioteste-primary": "#005A9C",
+                        "bioteste-secondary": "#4D9DE0",
+                        "bioteste-bg-light": "#F4F7FA",
+                        "bioteste-text-body": "#6B7280",
+                        "bioteste-text-heading": "#111827"
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+
+    <!-- Estilos Específicos desta Página -->
+    <style>
+        .chart-bar { transition: height 1s ease-out; }
+        
+        /* Modal Animation */
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal-content { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</head>
+
+<body class="font-display bg-bioteste-bg-light overflow-hidden">
+
+    <!-- MODAL DE TUTORIAL (Mantido pois é específico desta tela) -->
+    <div id="modal-tutorial" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md modal-content overflow-hidden">
+            <div class="bg-gradient-to-r from-bioteste-primary to-bioteste-secondary p-6 text-white text-center">
+                <div class="mx-auto bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mb-4 backdrop-blur-md">
+                    <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                </div>
+                <h2 class="text-2xl font-bold">Novidades do Sistema!</h2>
+                <p class="text-blue-100 text-sm mt-1">Veja o que mudou no seu Dashboard</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex gap-3">
+                    <div class="bg-green-100 text-green-600 h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-lg">check_circle</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm">Controle de Entregas</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Agora diferenciamos resultados "Entregues" (passado) de "Entrega Hoje" automaticamente na lista.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="bg-yellow-100 text-yellow-600 h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-lg">notifications_active</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm">Notificações Inteligentes</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">O ícone de sino fica amarelo se houver avisos de hoje ou ontem para sua unidade.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="bg-blue-100 text-blue-600 h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-lg">bar_chart</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-sm">Gráfico de Fluxo</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Correção no gráfico semanal para comparar datas exatas (DD/MM/AAAA), garantindo precisão.</p>
+                    </div>
+                </div>
+
+                <button onclick="fecharTutorial()" class="w-full mt-4 bg-bioteste-primary text-white font-bold py-3 rounded-xl hover:bg-bioteste-primary/90 transition-transform active:scale-[0.98] shadow-lg shadow-blue-500/30">
+                    Ciente, Vamos lá!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ESTRUTURA DO LAYOUT (Vazia, o motor preenche) -->
+    <div class="flex h-screen w-full">
+        
+        <!-- Sidebar Container -->
+        <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full"></aside>
+
+        <!-- Main Area -->
+        <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
+            
+            <!-- Header Container -->
+            <header id="app-header" class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20"></header>
+
+            <!-- ============================================================ -->
+            <!-- 3. CONTEÚDO ESPECÍFICO DO DASHBOARD                          -->
+            <!-- ============================================================ -->
+            <div class="p-6 lg:p-10 max-w-7xl mx-auto">
+                
+                <!-- PageHeading -->
+                <div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <p class="text-bioteste-text-heading text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Dashboard</p>
+                        <p class="text-bioteste-text-body text-base font-normal leading-normal mt-2">Visão geral das métricas críticas e atividades recentes.</p>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs text-gray-400 font-mono" id="data-atual">--/--/----</p>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Card 1: Hoje -->
+                    <div class="flex flex-col justify-between gap-2 rounded-xl p-6 border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <span class="material-symbols-outlined text-6xl text-bioteste-primary">calendar_today</span>
+                        </div>
+                        <p class="text-bioteste-text-heading text-base font-medium leading-normal relative z-10">Atendimentos Hoje</p>
+                        <p class="text-bioteste-primary tracking-tight text-4xl font-bold leading-tight relative z-10" id="stat-hoje">0</p>
+                        <div class="h-1 w-full bg-gray-100 mt-2 rounded-full overflow-hidden">
+                            <div class="h-full bg-bioteste-primary w-0 transition-all duration-1000" id="bar-hoje"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 2: Entregar Hoje -->
+                    <div class="flex flex-col gap-2 rounded-xl p-6 border border-gray-200 bg-white shadow-sm">
+                        <p class="text-bioteste-text-heading text-base font-medium leading-normal">Entregar Hoje</p>
+                        <p class="text-orange-500 tracking-tight text-3xl font-bold leading-tight" id="stat-resultados">0</p>
+                        <p class="text-xs text-gray-400">Resultados previstos</p>
+                    </div>
+
+                    <!-- Card 3: Semana -->
+                    <div class="flex flex-col gap-2 rounded-xl p-6 border border-gray-200 bg-white shadow-sm">
+                        <p class="text-bioteste-text-heading text-base font-medium leading-normal">Total Semana</p>
+                        <p class="text-green-600 tracking-tight text-3xl font-bold leading-tight" id="stat-semana">0</p>
+                        <p class="text-xs text-gray-400">Últimos 7 dias</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    
+                    <!-- Lado Esquerdo: Lista de Atendimentos -->
+                    <div class="xl:col-span-2">
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                                <h2 class="text-bioteste-text-heading text-xl font-bold leading-tight tracking-[-0.015em]">Atendimentos Recentes</h2>
+                                <div class="flex gap-2 w-full sm:w-auto">
+                                    <!-- Busca Interna -->
+                                    <div class="relative w-full sm:w-48">
+                                        <span class="material-symbols-outlined absolute left-2 top-2 text-gray-400 text-sm">search</span>
+                                        <input type="text" id="busca-dashboard" onkeyup="filtrarListaDashboard()" placeholder="Buscar paciente..." class="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-bioteste-primary focus:border-bioteste-primary">
+                                    </div>
+                                    <button onclick="carregarAtendimentos()" class="text-sm text-bioteste-primary hover:bg-bioteste-primary/10 px-3 py-1 rounded transition-colors">
+                                        <span class="material-symbols-outlined text-base align-middle">refresh</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flow-root h-[400px] overflow-y-auto">
+                                <ul class="divide-y divide-gray-100" role="list" id="lista-atendimentos">
+                                    <!-- Skeleton -->
+                                    <li class="py-4 animate-pulse">
+                                        <div class="flex items-center space-x-4">
+                                            <div class="rounded-full bg-gray-200 h-10 w-10"></div>
+                                            <div class="flex-1 space-y-2">
+                                                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div class="mt-4 pt-4 border-t border-gray-100 text-center">
+                                <a href="lista.atendimentos.html" class="text-sm font-medium text-bioteste-primary hover:underline">Ver lista completa</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lado Direito: Ações e Gráficos -->
+                    <div>
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+                            <h2 class="text-bioteste-text-heading text-xl font-bold leading-tight tracking-[-0.015em] mb-4">Ações Rápidas</h2>
+                            <div class="flex flex-col gap-3">
+                                <a href="adicionar.atendimento.html" class="flex w-full items-center justify-center gap-2 rounded-lg bg-bioteste-primary h-12 px-5 text-base font-bold text-white transition-all hover:bg-bioteste-primary/90 hover:shadow-lg hover:shadow-blue-500/20 active:scale-[0.98]">
+                                    <span class="material-symbols-outlined">add_circle</span>
+                                    <span>Adicionar Atendimento</span>
+                                </a>
+                                <a href="lista.atendimentos.html" class="flex w-full items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 h-12 px-5 text-base font-bold text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-300">
+                                    <span class="material-symbols-outlined text-gray-500">list</span>
+                                    <span>Ver Todos</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico Dinâmico -->
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                            <h2 class="text-bioteste-text-heading text-xl font-bold leading-tight tracking-[-0.015em] mb-4">Fluxo da Unidade</h2>
+                            <div class="flex items-end justify-between gap-2 h-40" id="grafico-container">
+                                <!-- Barras geradas via JS -->
+                                <div class="flex items-center justify-center w-full h-full text-gray-400 text-xs">Carregando gráfico...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 4. MÓDULOS DO SISTEMA (Segurança + Layout) -->
+    <script src="art.secure.js"></script>
+    <script src="layout.js"></script>
+
+    <!-- 5. LÓGICA ESPECÍFICA DO DASHBOARD -->
+    <script>
+        const API_NOTIFICACOES = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec";
+        const API_ATENDIMENTOS = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
+        
+        // Som de Notificação
+        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        
+        // Armazena dados locais
+        let todosAtendimentos = [];
+
+        // Inicialização
+        window.onload = function() {
+            // 1. Chama o Motor para desenhar Menu e Header e verificar Login
+            if (typeof BiotesteLayout !== 'undefined') {
+                BiotesteLayout.init('dashboard');
+                initDashboard();
+            } else {
+                console.error("layout.js não foi carregado!");
+                alert("Erro ao carregar sistema. Verifique os arquivos.");
+            }
+        };
+
+        function initDashboard() {
+            // Usa os dados do usuário carregados pelo Layout
+            const userData = BiotesteLayout.user || {}; 
+            
+            // Renderiza Data
+            renderizarData();
+            
+            // Verifica Tutorial
+            verificarTutorial();
+
+            // Carrega Dados
+            carregarAtendimentos(userData.unidade || 'Matriz');
+            
+            // Carrega Notificações (Agora robusto)
+            carregarNotificacoes();
+            setInterval(carregarNotificacoes, 60000); // Atualiza a cada minuto
+        }
+
+        // --- FUNÇÕES ESPECÍFICAS DO DASHBOARD ---
+
+        function verificarTutorial() {
+            const tutorialVisto = localStorage.getItem('bioteste_tutorial_v1');
+            if (!tutorialVisto) {
+                document.getElementById('modal-tutorial').classList.remove('hidden');
+            }
+        }
+
+        function fecharTutorial() {
+            localStorage.setItem('bioteste_tutorial_v1', 'true');
+            const modal = document.getElementById('modal-tutorial');
+            modal.style.opacity = '0';
+            modal.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function renderizarData() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const hoje = new Date().toLocaleDateString('pt-BR', options);
+            const el = document.getElementById('data-atual');
+            if(el) el.textContent = hoje.charAt(0).toUpperCase() + hoje.slice(1);
+        }
+
+        // Utilitários de Data
+        function converterIsoParaData(isoString) {
+            if (!isoString) return null;
+            const d = new Date(isoString);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function obterDataBR(dataObj) {
+            if (!dataObj) return "";
+            const dia = String(dataObj.getDate()).padStart(2, '0');
+            const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+            const ano = dataObj.getFullYear();
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        function formatarDataAmigavel(isoString) {
+            const d = converterIsoParaData(isoString);
+            if (!d) return '--';
+            const hoje = new Date();
+            const isHoje = d.getDate() === hoje.getDate() && d.getMonth() === hoje.getMonth() && d.getFullYear() === hoje.getFullYear();
+            return isHoje ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : obterDataBR(d);
+        }
+
+        // Atendimentos API
+        async function carregarAtendimentos(unidade) {
+            const lista = document.getElementById('lista-atendimentos');
+            
+            try {
+                const url = `${API_ATENDIMENTOS}?acao=trazerPorUnidade&unidade=${encodeURIComponent(unidade)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                lista.innerHTML = '';
+
+                if (result.status === "sucesso" && Array.isArray(result.dados)) {
+                    todosAtendimentos = result.dados.reverse();
+                    atualizarStats(todosAtendimentos);
+                    atualizarGraficoSemanal(todosAtendimentos);
+                    renderizarLista(todosAtendimentos);
+                } else {
+                    lista.innerHTML = `<li class="py-8 text-center text-gray-500">Nenhum dado encontrado.</li>`;
+                }
+            } catch (error) {
+                console.error(error);
+                lista.innerHTML = '<li class="py-4 text-center text-red-400 text-sm">Erro de conexão.</li>';
+            }
+        }
+
+        // Notificações (Corrigido para usar DOM do layout.js)
+        async function carregarNotificacoes() {
+            try {
+                const container = document.getElementById('lista-notificacoes');
+                const badge = document.getElementById('notificacao-badge');
+                
+                if(!container || !badge) return;
+
+                const unidadeUsuario = (BiotesteLayout?.user?.unidade || '').toLowerCase().trim();
+                const ultimaNotificacaoId = localStorage.getItem('bioteste_last_notification_id');
+
+                const url = `${API_NOTIFICACOES}?action=get`; 
+                const response = await fetch(url);
+                const result = await response.json();
+                const todosDados = result.data || [];
+
+                container.innerHTML = '';
+                
+                const notificacoesFiltradas = todosDados.filter(n => {
+                    const uNotificacao = (n.unidade || '').toLowerCase().trim();
+                    return uNotificacao === unidadeUsuario || uNotificacao === 'todos' || uNotificacao === 'todas';
+                });
+
+                let temRecente = false;
+                let novaNotificacaoDetectada = false;
+                let maiorIdEncontrado = ultimaNotificacaoId || 0;
+                
+                const hoje = new Date();
+                const ontem = new Date();
+                ontem.setDate(hoje.getDate() - 1);
+                hoje.setHours(0,0,0,0);
+                ontem.setHours(0,0,0,0);
+
+                if (notificacoesFiltradas.length > 0) {
+                    badge.classList.remove('hidden');
+                    
+                    notificacoesFiltradas.forEach(n => {
+                        const currentId = n.id_noti || 0;
+                        if(currentId > maiorIdEncontrado && currentId !== ultimaNotificacaoId) {
+                            novaNotificacaoDetectada = true;
+                            maiorIdEncontrado = currentId;
+                        }
+
+                        const d = converterIsoParaData(n.criado_em);
+                        if(d) {
+                            d.setHours(0,0,0,0);
+                            if(d.getTime() === hoje.getTime() || d.getTime() === ontem.getTime()) {
+                                temRecente = true;
+                            }
+                        }
+
+                        const dataFormatada = obterDataBR(converterIsoParaData(n.criado_em));
+                        const div = document.createElement('div');
+                        div.className = "p-3 border-b border-gray-50 hover:bg-blue-50";
+                        div.innerHTML = `<p class="text-sm text-gray-800">${n.texto_notificacao}</p><p class="text-xs text-gray-400">${dataFormatada}</p>`;
+                        container.appendChild(div);
+                    });
+
+                    // Cor do badge
+                    if (temRecente) {
+                        badge.className = "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-yellow-500";
+                    } else {
+                        badge.className = "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500";
+                    }
+
+                    // Som
+                    if (novaNotificacaoDetectada && ultimaNotificacaoId) {
+                        try { notificationSound.play().catch(() => {}); } catch(e) {}
+                    }
+                    
+                    // Salva ID
+                    if(notificacoesFiltradas[0]?.id_noti) {
+                        localStorage.setItem('bioteste_last_notification_id', notificacoesFiltradas[0].id_noti);
+                    }
+
+                } else {
+                    badge.classList.add('hidden');
+                    container.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">Sem notificações.</div>';
+                }
+            } catch (e) { 
+                const container = document.getElementById('lista-notificacoes');
+                if(container) container.innerHTML = '<div class="p-6 text-center text-red-400 text-xs">Erro ao carregar.</div>';
+            }
+        }
+
+        function renderizarLista(dados) {
+            const lista = document.getElementById('lista-atendimentos');
+            lista.innerHTML = '';
+
+            if(dados.length === 0) {
+                lista.innerHTML = '<li class="py-8 text-center text-gray-400 text-sm">Nenhum resultado.</li>';
+                return;
+            }
+
+            const displayData = dados.slice(0, 10);
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+
+            displayData.forEach(item => {
+                const dEntrada = formatarDataAmigavel(item.dataEntrada);
+                const dResultado = converterIsoParaData(item.dataResultado);
+                
+                let statusHtml = '';
+                let iconClass = 'bg-blue-100 text-bioteste-primary';
+                let iconName = 'science';
+
+                if (dResultado) {
+                    const dResCheck = new Date(dResultado);
+                    dResCheck.setHours(0,0,0,0);
+
+                    if (dResCheck.getTime() < hoje.getTime()) {
+                        statusHtml = `<span class="flex items-center text-green-600 text-xs font-bold"><span class="material-symbols-outlined text-base mr-1">check_circle</span> Enviado</span>`;
+                        iconClass = 'bg-green-100 text-green-600';
+                        iconName = 'task_alt';
+                    } else if (dResCheck.getTime() === hoje.getTime()) {
+                        statusHtml = `<span class="flex items-center text-orange-500 text-xs font-bold" title="Resultado previsto para hoje"><span class="material-symbols-outlined text-base mr-1">warning</span> Entrega Hoje</span>`;
+                        iconClass = 'bg-orange-100 text-orange-600';
+                        iconName = 'priority_high';
+                    } else {
+                        statusHtml = `<span class="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">schedule</span> ${dEntrada}</span>`;
+                    }
+                } else {
+                     statusHtml = `<span class="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">schedule</span> ${dEntrada}</span>`;
+                }
+
+                const li = document.createElement('li');
+                li.className = "py-3 sm:py-4 hover:bg-gray-50 rounded-lg px-2 transition-colors";
+                li.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full ${iconClass} flex items-center justify-center">
+                            <span class="material-symbols-outlined">${iconName}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-bioteste-text-heading truncate">${item.nomePaciente}</p>
+                            <p class="text-xs text-bioteste-text-body truncate">Astra: <span class="font-mono text-gray-600">${item.numeroAtendimento || '-'}</span></p>
+                        </div>
+                        <div class="inline-flex flex-col items-end text-sm font-semibold text-bioteste-text-body">
+                            ${statusHtml}
+                        </div>
+                    </div>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        function filtrarListaDashboard() {
+            const termo = document.getElementById('busca-dashboard').value.toLowerCase();
+            const filtrados = todosAtendimentos.filter(item => 
+                (item.nomePaciente || '').toLowerCase().includes(termo) || 
+                (item.numeroAtendimento || '').toLowerCase().includes(termo)
+            );
+            renderizarLista(filtrados);
+        }
+
+        function atualizarStats(dados) {
+            const hojeStr = obterDataBR(new Date());
+            
+            const countHoje = dados.filter(i => {
+                const d = converterIsoParaData(i.dataEntrada);
+                return d && obterDataBR(d) === hojeStr;
+            }).length;
+            document.getElementById('stat-hoje').textContent = countHoje;
+            
+            setTimeout(() => {
+                const bar = document.getElementById('bar-hoje');
+                if(bar) bar.style.width = `${Math.min((countHoje/50)*100, 100)}%`;
+            }, 500);
+
+            const countEntregaHoje = dados.filter(i => {
+                const d = converterIsoParaData(i.dataResultado);
+                return d && obterDataBR(d) === hojeStr;
+            }).length;
+            document.getElementById('stat-resultados').textContent = countEntregaHoje;
+
+            document.getElementById('stat-semana').textContent = dados.length;
+        }
+
+        function atualizarGraficoSemanal(dados) {
+            const container = document.getElementById('grafico-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            const diasGrafico = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateKey = obterDataBR(d); 
+                let label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase();
+                if (i === 0) label = 'HOJE';
+                diasGrafico.push({ label: label, dateStr: dateKey, count: 0 });
+            }
+
+            dados.forEach(item => {
+                if(!item.dataEntrada) return;
+                const d = converterIsoParaData(item.dataEntrada);
+                if (!d) return;
+                const dataItemKey = obterDataBR(d);
+                const diaEncontrado = diasGrafico.find(dia => dia.dateStr === dataItemKey);
+                if (diaEncontrado) diaEncontrado.count++;
+            });
+
+            const maxCount = Math.max(...diasGrafico.map(d => d.count));
+            const escala = maxCount > 0 ? maxCount : 5;
+
+            diasGrafico.forEach(dia => {
+                let altura = 0;
+                if (dia.count > 0) {
+                    altura = (dia.count / escala) * 100;
+                    if (altura < 10) altura = 10; 
+                }
+                const isHoje = dia.label === 'HOJE';
+                const tooltip = `${dia.count} atendimentos<br>${dia.dateStr}`;
+
+                const barraHtml = `
+                    <div class="flex flex-col items-center gap-1 w-full group cursor-pointer relative h-full justify-end">
+                        <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1.5 px-2.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-lg text-center leading-tight">
+                            ${tooltip}
+                            <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-t-md relative flex items-end overflow-hidden" style="height: 100%;">
+                            <div class="w-full ${isHoje ? 'bg-bioteste-primary' : 'bg-blue-300 group-hover:bg-bioteste-secondary'} rounded-t-md chart-bar transition-all duration-500" style="height: ${altura}%"></div>
+                        </div>
+                        <span class="text-[10px] ${isHoje ? 'text-bioteste-primary font-bold' : 'text-gray-400'} uppercase font-medium tracking-wider">${dia.label}</span>
+                    </div>
+                `;
+                container.innerHTML += barraHtml;
+            });
+        }
+    </script>
+</body>
+</html>

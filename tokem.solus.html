@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Bioteste - Validação de Token</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#067ff9",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f1923",
+                        "text-light": "#333333",
+                        "text-dark": "#f5f7f8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .hidden-view { display: none !important; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+    
+    <!-- Container de Notificações -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <div class="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white dark:bg-[#1a2733] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 animate-fade-in">
+            
+            <!-- Cabeçalho (Logo) -->
+            <div class="flex justify-center mb-6">
+                <div class="flex items-center gap-2 text-primary">
+                    <span class="material-symbols-outlined text-4xl">science</span>
+                    <span class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Bioteste</span>
+                </div>
+            </div>
+
+            <!-- VIEW 1: Enviando Token (Carregando) -->
+            <div id="view-loading" class="flex flex-col items-center text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                <h2 class="text-xl font-bold mb-2">Verificando Dispositivo...</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Validando credenciais de segurança.</p>
+                <p id="user-email-display" class="mt-2 font-medium text-primary"></p>
+            </div>
+
+            <!-- VIEW 2: Digitar Token -->
+            <div id="view-validate" class="hidden-view flex flex-col items-center w-full">
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-full text-primary mb-4">
+                    <span class="material-symbols-outlined text-3xl">lock_open</span>
+                </div>
+                <h2 class="text-2xl font-bold mb-2 text-center">Validação de Segurança</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 text-center mb-6">
+                    Este é um novo dispositivo. Enviamos um código de 4 dígitos para seu e-mail.
+                </p>
+
+                <form onsubmit="validarToken(event)" class="w-full flex flex-col gap-4">
+                    <div>
+                        <label class="text-sm font-medium mb-1 block">Código do Token</label>
+                        <div class="relative">
+                            <input id="input-token" type="text" maxlength="4" inputmode="numeric" 
+                                class="w-full h-14 text-center text-2xl font-bold tracking-[0.5em] rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:border-primary uppercase placeholder:tracking-normal" 
+                                placeholder="0000" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-validar" class="w-full h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <span>Validar Acesso</span>
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <button onclick="reenviarToken()" class="text-sm text-slate-500 hover:text-primary underline">
+                        Não recebi o código
+                    </button>
+                    <div class="mt-4">
+                        <a href="index.html" class="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            Voltar para Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript -->
+    <script>
+        // API Configuration
+        const API_URL = "https://script.google.com/macros/s/AKfycbz2QewOBm7DgOWOK_MQYvWJg13bocafPp6XRXedzs7Dlt5X4fKSWs-MdmVpiMqFqFqjLA/exec";
+        
+        // Estado Global
+        let userEmail = "";
+        let userId = "";
+        let serverToken = ""; 
+
+        // 1. Inicialização Automática
+        window.onload = function() {
+            verificarUsuarioLocal();
+        };
+
+        function verificarUsuarioLocal() {
+            // Busca o usuário salvo no login anterior
+            const userData = localStorage.getItem('bioteste_user');
+            
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    
+                    // Guarda o ID e Email para uso global
+                    userId = user.id;
+                    userEmail = user.email;
+                    
+                    // --- NOVO: VERIFICAÇÃO DE DISPOSITIVO ---
+                    // Verifica se existe a chave "bioteste_auth_ID_DO_USUARIO"
+                    const dispositivoVerificado = localStorage.getItem(`bioteste_auth_${userId}`);
+                    
+                    if (dispositivoVerificado === 'true') {
+                        // Se já foi verificado antes, redireciona direto
+                        console.log("Dispositivo já verificado. Redirecionando...");
+                        window.location.href = "boas.vindas.html";
+                        return; // Para a execução aqui
+                    }
+                    
+                    // Se NÃO for verificado, continua o fluxo normal (pede token)
+                    if (userEmail) {
+                        document.getElementById('user-email-display').textContent = userEmail;
+                        solicitarTokenApi(userEmail);
+                    } else {
+                        erroLogin("E-mail não encontrado nos dados do usuário.");
+                    }
+                } catch (e) {
+                    erroLogin("Erro ao ler dados do usuário.");
+                }
+            } else {
+                erroLogin("Usuário não logado.");
+            }
+        }
+
+        function erroLogin(msg) {
+            mostrarNotificacao('error', msg);
+            setTimeout(() => window.location.href = 'index.html', 2000);
+        }
+
+        // 2. Solicita o Token na API
+        async function solicitarTokenApi(email) {
+            try {
+                const url = `${API_URL}?email=${encodeURIComponent(email)}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === "sucesso") {
+                    serverToken = result.token.toString();
+                    
+                    mostrarNotificacao('success', 'Código enviado para ' + email);
+                    
+                    // Troca a tela para digitação
+                    document.getElementById('view-loading').classList.add('hidden-view');
+                    document.getElementById('view-validate').classList.remove('hidden-view');
+                    
+                    document.getElementById('input-token').focus();
+                } else {
+                    mostrarNotificacao('error', result.mensagem || "Erro ao enviar email.");
+                    setTimeout(() => window.location.href = 'index.html', 3000);
+                }
+
+            } catch (error) {
+                console.error(error);
+                mostrarNotificacao('error', "Falha na conexão com o servidor.");
+            }
+        }
+
+        // 3. Validação do Input do Usuário
+        function validarToken(event) {
+            event.preventDefault();
+            const inputToken = document.getElementById('input-token').value;
+            const btn = document.getElementById('btn-validar');
+
+            if (inputToken === serverToken) {
+                // --- SUCESSO ---
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Validando...';
+                btn.classList.add('bg-green-600');
+                
+                // --- NOVO: SALVAR DISPOSITIVO COMO CONFIÁVEL ---
+                if (userId) {
+                    localStorage.setItem(`bioteste_auth_${userId}`, 'true');
+                }
+                
+                mostrarNotificacao('success', 'Acesso Autorizado!');
+                
+                // Redireciona para a nova página
+                setTimeout(() => {
+                    window.location.href = "boas.vindas.html"; 
+                }, 1000);
+
+            } else {
+                // ERRO
+                mostrarNotificacao('error', 'Código incorreto. Tente novamente.');
+                const input = document.getElementById('input-token');
+                input.value = '';
+                input.focus();
+                input.classList.add('border-red-500', 'animate-pulse');
+                setTimeout(() => input.classList.remove('border-red-500', 'animate-pulse'), 2000);
+            }
+        }
+
+        function reenviarToken() {
+            document.getElementById('view-validate').classList.add('hidden-view');
+            document.getElementById('view-loading').classList.remove('hidden-view');
+            solicitarTokenApi(userEmail);
+        }
+
+        function mostrarNotificacao(type, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'check_circle' : 'error';
+
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 animate-bounce transition-all transform translate-y-0 opacity-100`;
+            toast.innerHTML = `<span class="material-symbols-outlined">${icon}</span><span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+🧬 Bioteste Solus - Sistema de Gestão Laboratorial v2.0
+
+Bem-vindo ao Bioteste Solus, uma plataforma web progressiva projetada para otimizar o fluxo de atendimento laboratorial e a gestão de qualidade (NPS). O sistema foca em velocidade, operação offline-first e segurança de dados.
+
+🚀 Visão Geral
+
+O sistema é dividido em dois módulos principais com base no nível de acesso do utilizador:
+
+Módulo Operacional (Funcionários): Focado na velocidade de cadastro, gestão da fila de espera e consulta rápida de resultados.
+
+Módulo Administrativo (Gestão/Qualidade): Focado em inteligência de dados, análise de NPS (Net Promoter Score), gestão de utilizadores e relatórios gerenciais.
+
+✨ Funcionalidades Principais
+
+🏥 Operacional (Frente de Loja)
+
+Fila Inteligente (Offline-First): Permite cadastrar pacientes mesmo sem internet. Os dados são armazenados localmente e sincronizados automaticamente quando a conexão é restabelecida.
+
+Dashboard Diário: Visualização imediata de metas do dia, atendimentos realizados e resultados pendentes de entrega ("Para Hoje").
+
+Alertas Sonoros: Notificações em tempo real com áudio para avisos importantes da administração.
+
+Lista de Atendimentos: Filtros avançados por data, nome, número Astra e unidade.
+
+📊 Administrativo & Qualidade
+
+Cruzamento de Dados (B.I.): O sistema compara automaticamente o volume de Atendimentos Realizados (API Produção) com as Pesquisas Respondidas (API Qualidade) para gerar taxas de conversão reais.
+
+Análise de NPS: Cálculo automático de satisfação, gráficos de barras por quesito (Recepção, Coleta, Espera) e distribuição por unidade.
+
+Voz do Cliente: Aba dedicada para feedbacks textuais e clientes que se identificaram na pesquisa.
+
+Gestão de Utilizadores: CRUD completo (Criar, Ler, Atualizar, Apagar) de utilizadores com controle de nível de acesso.
+
+Relatórios Formais: Geração de PDFs limpos (layout A4) e exportação para CSV (Excel) com um clique.
+
+🛡️ Segurança (Módulo ArtSecure)
+
+O sistema conta com um módulo de segurança ativo (art.secure.js) que implementa:
+
+Bloqueio Mobile: Restringe o acesso apenas a computadores/desktops para garantir a segurança dos dados.
+
+Anti-Debug: Bloqueia tentativas de inspeção de código (F12, Botão Direito).
+
+Validação de Dispositivo: Sistema de Token via E-mail para autorizar novos dispositivos.
+
+Banimento Automático: Bloqueio temporário (3 dias) em caso de detecção de comportamento suspeito.
+
+📂 Estrutura do Projeto
+
+O projeto é composto por ficheiros HTML estáticos potencializados por JavaScript moderno e Tailwind CSS.
+
+Raiz (Acesso Público/Operacional)
+
+Ficheiro
+
+Descrição
+
+index.html
+
+Tela de Login.
+
+verificar.token.html
+
+Validação de segurança (2FA) para novos dispositivos.
+
+boas.vindas.html
+
+Landing page do funcionário (apresentação de novidades).
+
+painel.solus.bioteste.html
+
+Dashboard Principal do funcionário.
+
+adicionar.atendimento.html
+
+Formulário de cadastro com Fila Offline.
+
+lista.atendimentos.html
+
+Listagem e busca de pacientes.
+
+relatorios.html
+
+Relatórios operacionais básicos.
+
+minha.conta.html
+
+Perfil do utilizador.
+
+Pasta admqualidade/ (Acesso Restrito)
+
+Ficheiro
+
+Descrição
+
+boasvindasadm.html
+
+Landing page do gestor (apresentação v2.0).
+
+painel.qualidade.html
+
+Dashboard de NPS e cruzamento de dados.
+
+pesquisa.qualidade.html
+
+Detalhamento das pesquisas e feedbacks.
+
+relatorio.pesquisa.html
+
+Gerador de PDF oficial de qualidade.
+
+relatorios.gerais.html
+
+Relatórios gerenciais com exclusão em massa.
+
+gerenciar.usuarios.html
+
+Painel de controle de acessos e senhas.
+
+manual.html
+
+Documentação técnica para o gestor.
+
+Núcleo (Scripts)
+
+Ficheiro
+
+Descrição
+
+layout.js
+
+Motor de layout para o módulo Operacional (Menu/Header).
+
+layout.adm.js
+
+Motor de layout para o módulo Administrativo (Roxo).
+
+art.secure.js
+
+Módulo de segurança e proteção.
+
+🛠️ Tecnologias Utilizadas
+
+Frontend: HTML5, JavaScript (ES6+), Tailwind CSS (via CDN).
+
+Backend (Serverless): Google Apps Script (Executáveis Web).
+
+Base de Dados: Google Sheets (conectado via API JSON).
+
+Ícones: Google Material Symbols.
+
+Fontes: Inter (Google Fonts).
+
+🚀 Como Utilizar
+
+Login: Aceda a index.html. Utilize as credenciais fornecidas.
+
+Primeiro Acesso: Se for um novo dispositivo, o sistema enviará um Token para o e-mail cadastrado. Insira-o em verificar.token.html.
+
+Navegação:
+
+Funcionários: Serão direcionados ao fluxo azul (painel.solus...).
+
+Administradores: Serão direcionados ao fluxo roxo (admqualidade/...).
+
+📄 Licença
+
+Este projeto está licenciado sob a licença MIT. Consulte o ficheiro LICENSE para mais detalhes.
+
+Desenvolvido por Artificial Ribeiro © 2025
