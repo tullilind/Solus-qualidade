@@ -97,6 +97,9 @@
         </div>
     </div>
 
+    <!-- MÓDULO DE SEGURANÇA -->
+    <script src="art.secure.js"></script>
+
     <!-- Lógica JavaScript -->
     <script>
         // API Configuration
@@ -105,10 +108,16 @@
         // Estado Global
         let userEmail = "";
         let userId = "";
+        let userAccess = ""; // Novo: Armazena o nível de acesso
         let serverToken = ""; 
 
         // 1. Inicialização Automática
         window.onload = function() {
+            // Inicia o ArtSecure manualmente se necessário, mas ele já se auto-inicia
+            if (typeof ArtSecure !== 'undefined') {
+                // Opcional: Ajustar configurações específicas para esta página se precisar
+                // ArtSecure.init(); 
+            }
             verificarUsuarioLocal();
         };
 
@@ -120,19 +129,20 @@
                 try {
                     const user = JSON.parse(userData);
                     
-                    // Guarda o ID e Email para uso global
+                    // Guarda dados globais
                     userId = user.id;
                     userEmail = user.email;
+                    userAccess = user.acesso; // Captura o acesso (ex: "adm")
                     
-                    // --- NOVO: VERIFICAÇÃO DE DISPOSITIVO ---
+                    // --- VERIFICAÇÃO DE DISPOSITIVO ---
                     // Verifica se existe a chave "bioteste_auth_ID_DO_USUARIO"
                     const dispositivoVerificado = localStorage.getItem(`bioteste_auth_${userId}`);
                     
                     if (dispositivoVerificado === 'true') {
                         // Se já foi verificado antes, redireciona direto
                         console.log("Dispositivo já verificado. Redirecionando...");
-                        window.location.href = "boas.vindas.html";
-                        return; // Para a execução aqui
+                        redirecionarUsuario(); // Usa a função de redirecionamento inteligente
+                        return; 
                     }
                     
                     // Se NÃO for verificado, continua o fluxo normal (pede token)
@@ -147,6 +157,17 @@
                 }
             } else {
                 erroLogin("Usuário não logado.");
+            }
+        }
+
+        // Função Centralizada de Redirecionamento
+        function redirecionarUsuario() {
+            if (userAccess === 'adm') {
+                // Se for ADM, vai para a pasta admqualidade
+                window.location.href = "admqualidade/boasvindasadm.html";
+            } else {
+                // Se for qualquer outro acesso, vai para boas vindas padrão
+                window.location.href = "boas.vindas.html";
             }
         }
 
@@ -195,16 +216,16 @@
                 btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Validando...';
                 btn.classList.add('bg-green-600');
                 
-                // --- NOVO: SALVAR DISPOSITIVO COMO CONFIÁVEL ---
+                // --- SALVAR DISPOSITIVO COMO CONFIÁVEL ---
                 if (userId) {
                     localStorage.setItem(`bioteste_auth_${userId}`, 'true');
                 }
                 
                 mostrarNotificacao('success', 'Acesso Autorizado!');
                 
-                // Redireciona para a nova página
+                // Redireciona usando a lógica de acesso
                 setTimeout(() => {
-                    window.location.href = "boas.vindas.html"; 
+                    redirecionarUsuario();
                 }, 1000);
 
             } else {
