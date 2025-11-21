@@ -34,6 +34,11 @@
         .chart-bar { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal Transitions */
+        #modal-notificacoes { transition: opacity 0.3s ease; }
+        #modal-notificacoes.hidden { opacity: 0; pointer-events: none; }
+        #modal-notificacoes:not(.hidden) { opacity: 1; pointer-events: auto; }
     </style>
 </head>
 
@@ -53,12 +58,21 @@
                         <h1 class="text-bioteste-text-heading text-3xl font-black tracking-tight">Controle de Qualidade (NPS)</h1>
                         <p class="text-bioteste-text-body mt-1">Comparativo entre volume de atendimentos e retorno das pesquisas de satisfação.</p>
                     </div>
-                    <div class="text-right flex flex-col items-end">
+                    <div class="text-right flex flex-col items-end gap-2">
                         <p class="text-xs text-gray-400 font-mono" id="data-atual">--/--/----</p>
-                        <!-- Status Clicável para recarregar -->
-                        <button onclick="carregarDadosCruzados()" id="status-api" class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200 mt-1 hover:bg-gray-200 transition-colors flex items-center gap-1 cursor-pointer">
-                            <span class="material-symbols-outlined text-[10px]">sync</span> Aguardando...
-                        </button>
+                        
+                        <div class="flex gap-2">
+                            <!-- Botão Notificações (NOVO) -->
+                            <button onclick="abrirModalNotificacoes()" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm shadow-purple-200">
+                                <span class="material-symbols-outlined text-sm">campaign</span>
+                                Criar Notificação
+                            </button>
+
+                            <!-- Status API -->
+                            <button onclick="carregarDadosCruzados()" id="status-api" class="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-200 transition-colors flex items-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-[10px]">sync</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -147,6 +161,65 @@
         </main>
     </div>
 
+    <!-- MODAL DE NOTIFICAÇÕES -->
+    <div id="modal-notificacoes" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="bg-purple-50 px-6 py-4 border-b border-purple-100 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-purple-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined">campaign</span>
+                    Central de Notificações
+                </h3>
+                <button onclick="fecharModalNotificacoes()" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scroll">
+                
+                <!-- Formulário de Envio -->
+                <div class="bg-white border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 tracking-wider">Enviar Nova Mensagem</h4>
+                    <form onsubmit="enviarNotificacao(event)" class="space-y-3">
+                        <div>
+                            <textarea id="noti-texto" required class="w-full text-sm p-3 border-gray-200 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-gray-50 resize-none" rows="3" placeholder="Digite a mensagem para os colaboradores..."></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <select id="noti-unidade" class="w-full text-xs p-2.5 border-gray-200 rounded-lg bg-white focus:ring-purple-500 focus:border-purple-500">
+                                    <option value="todas">Todas as Unidades</option>
+                                    <!-- Preenchido via JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <input type="text" id="noti-link" class="w-full text-xs p-2.5 border-gray-200 rounded-lg bg-white focus:ring-purple-500 focus:border-purple-500" placeholder="Link (Opcional)">
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-1">
+                            <button type="submit" id="btn-enviar-noti" class="bg-purple-600 text-white px-5 py-2 rounded-lg font-bold text-xs hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-md">
+                                <span class="material-symbols-outlined text-sm">send</span>
+                                Enviar Agora
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Histórico -->
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Histórico de Envios</h4>
+                    <button onclick="carregarHistoricoNotificacoes()" class="text-xs text-purple-600 hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[10px]">refresh</span> Atualizar
+                    </button>
+                </div>
+
+                <div id="lista-historico-noti" class="space-y-2">
+                    <div class="text-center py-6 text-gray-400 text-xs">Carregando histórico...</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- 4. MÓDULOS -->
     <script src="../art.secure.js"></script>
     <script src="layout.adm.js"></script>
@@ -156,6 +229,7 @@
         // --- APIs ---
         const API_ATENDIMENTOS = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
         const API_PESQUISAS = "https://script.google.com/macros/s/AKfycbxgZe7BI3RcVQI_zzQ3OVwqnWWTbsuRGW7JTva_svXBUoj5e_vYnNQHbLDrQNXq42YS/exec";
+        const API_NOTIFICACOES_GERAL = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec";
         
         // --- Mapeamento de Chaves do JSON de Pesquisa ---
         const KEYS = {
@@ -170,12 +244,14 @@
             nome: "Nome completo"
         };
 
+        let unidadesDisponiveis = new Set();
+
         window.onload = function() {
             if (typeof BiotesteLayoutAdm !== 'undefined') {
                 BiotesteLayoutAdm.init('dashboard');
                 initPage();
             } else {
-                console.error("layout.adm.js falhou.");
+                console.error("layout.adm.js não encontrado.");
                 initPage();
             }
         };
@@ -188,32 +264,130 @@
             carregarDadosCruzados();
         }
 
+        // --- NOTIFICAÇÕES (NOVO) ---
+        function abrirModalNotificacoes() {
+            document.getElementById('modal-notificacoes').classList.remove('hidden');
+            carregarHistoricoNotificacoes();
+            popularSelectUnidadesModal();
+        }
+
+        function fecharModalNotificacoes() {
+            document.getElementById('modal-notificacoes').classList.add('hidden');
+        }
+
+        async function enviarNotificacao(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-enviar-noti');
+            const texto = document.getElementById('noti-texto').value;
+            const unidade = document.getElementById('noti-unidade').value;
+            const link = document.getElementById('noti-link').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">refresh</span> Enviando...';
+
+            try {
+                // GET request para registrar
+                const url = `${API_NOTIFICACOES_GERAL}?action=register&texto=${encodeURIComponent(texto)}&unidade=${encodeURIComponent(unidade)}&link=${encodeURIComponent(link)}`;
+                const res = await fetch(url);
+                const json = await res.json();
+
+                if (json.status === 'success') {
+                    alert("Notificação enviada com sucesso!");
+                    document.getElementById('noti-texto').value = '';
+                    document.getElementById('noti-link').value = '';
+                    carregarHistoricoNotificacoes();
+                } else {
+                    alert("Erro ao enviar: " + json.message);
+                }
+            } catch (err) {
+                alert("Erro de conexão.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Enviar Agora';
+            }
+        }
+
+        async function carregarHistoricoNotificacoes() {
+            const lista = document.getElementById('lista-historico-noti');
+            lista.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs animate-pulse">Carregando...</div>';
+
+            try {
+                // Traz TODAS para o admin ver o histórico global
+                const url = `${API_NOTIFICACOES_GERAL}?action=get`;
+                const res = await fetch(url);
+                const json = await res.json();
+
+                if (json.status === 'success') {
+                    lista.innerHTML = '';
+                    const dados = json.data.reverse().slice(0, 10); // Últimas 10
+
+                    if(dados.length === 0) {
+                        lista.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">Nenhuma notificação enviada.</div>';
+                        return;
+                    }
+
+                    dados.forEach(n => {
+                        const data = new Date(n.criado_em).toLocaleDateString('pt-BR');
+                        const unidadeLabel = n.unidade === 'todas' ? 'Todas as Unidades' : n.unidade;
+                        const badgeClass = n.unidade === 'todas' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700';
+
+                        const item = document.createElement('div');
+                        item.className = "bg-white border border-gray-100 rounded-lg p-3 shadow-sm";
+                        item.innerHTML = `
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[10px] font-bold uppercase ${badgeClass} px-1.5 py-0.5 rounded">${unidadeLabel}</span>
+                                <span class="text-[10px] text-gray-400">${data}</span>
+                            </div>
+                            <p class="text-xs text-gray-700 font-medium">${n.texto_notificacao || n.texto}</p>
+                            ${n.link ? `<a href="${n.link}" target="_blank" class="text-[10px] text-purple-600 hover:underline flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[10px]">link</span> Link anexo</a>` : ''}
+                        `;
+                        lista.appendChild(item);
+                    });
+                }
+            } catch (e) {
+                lista.innerHTML = '<div class="text-center py-4 text-red-400 text-xs">Erro ao carregar histórico.</div>';
+            }
+        }
+
+        function popularSelectUnidadesModal() {
+            const select = document.getElementById('noti-unidade');
+            // Limpa e mantém 'Todas'
+            select.innerHTML = '<option value="todas">Todas as Unidades</option>';
+            
+            // Usa o Set preenchido pelo carregamento principal
+            Array.from(unidadesDisponiveis).sort().forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u; // Envia o nome normalizado
+                opt.textContent = u;
+                select.appendChild(opt);
+            });
+        }
+
+        // --- DADOS CRUZADOS ---
         async function carregarDadosCruzados() {
             const statusEl = document.getElementById('status-api');
             if(statusEl) {
-                statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px] animate-spin">refresh</span> Sincronizando...';
-                statusEl.className = "text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 cursor-wait";
+                statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px] animate-spin">refresh</span>';
             }
             
             let dadosAtendimentos = [];
             let dadosPesquisas = [];
             let erros = [];
 
-            // 1. Busca Atendimentos (Tenta independente)
+            // 1. Busca Atendimentos
             try {
                 const res1 = await fetch(`${API_ATENDIMENTOS}?acao=trazerTodos`);
                 const json1 = await res1.json();
                 if (json1.status === 'sucesso' && Array.isArray(json1.dados)) {
                     dadosAtendimentos = json1.dados;
+                    // Coleta unidades para o modal
+                    dadosAtendimentos.forEach(a => unidadesDisponiveis.add(normalizarUnidade(a.unidade)));
                 } else {
                     erros.push("Atendimentos");
                 }
-            } catch (e) {
-                console.error("Erro Atendimentos:", e);
-                erros.push("Atendimentos");
-            }
+            } catch (e) { erros.push("Atendimentos"); }
 
-            // 2. Busca Pesquisas (Tenta independente)
+            // 2. Busca Pesquisas
             try {
                 const res2 = await fetch(`${API_PESQUISAS}?action=getAll`);
                 const json2 = await res2.json();
@@ -222,23 +396,17 @@
                 } else {
                     erros.push("Pesquisas");
                 }
-            } catch (e) {
-                console.error("Erro Pesquisas:", e);
-                erros.push("Pesquisas");
-            }
+            } catch (e) { erros.push("Pesquisas"); }
 
-            // 3. Atualiza Status com base no resultado
+            // 3. Status
             if (statusEl) {
                 if (erros.length === 0) {
-                    statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px]">check_circle</span> Atualizado';
-                    statusEl.className = "text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100 cursor-pointer";
+                    statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px] text-green-600">check_circle</span>';
                 } else {
-                    statusEl.innerHTML = `<span class="material-symbols-outlined text-[10px]">warning</span> Falha Parcial`;
-                    statusEl.className = "text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100 cursor-pointer";
+                    statusEl.innerHTML = '<span class="material-symbols-outlined text-[10px] text-orange-600">warning</span>';
                 }
             }
 
-            // Processa o que chegou (mesmo que parcial)
             processarDados(dadosAtendimentos, dadosPesquisas);
         }
 
@@ -267,36 +435,25 @@
 
             const satisfacao = totalPontos > 0 ? ((pontosPositivos / totalPontos) * 100).toFixed(1) : 0;
 
-            // Atualiza Cards
             safeSetText('kpi-atendimentos', totalAtendimentos);
             safeSetText('kpi-pesquisas', totalPesquisas);
             safeSetText('kpi-conversao', `${taxaConversao}%`);
             safeSetText('kpi-satisfacao', `${satisfacao}%`);
 
-            // --- AGRUPAMENTO POR UNIDADE INTELIGENTE ---
+            // Agrupamento por Unidade
             const mapaUnidades = {};
 
-            // 1. Processa Atendimentos (Usa normalizarUnidade)
             atendimentos.forEach(a => {
-                // Normaliza o nome da unidade para agrupar
-                const nomeOriginal = a.unidade || 'Indefinida';
-                const nomeNormalizado = normalizarUnidade(nomeOriginal);
-                
-                if (!mapaUnidades[nomeNormalizado]) {
-                    mapaUnidades[nomeNormalizado] = { nome: nomeNormalizado, atendimentos: 0, pesquisas: 0 };
-                }
-                mapaUnidades[nomeNormalizado].atendimentos++;
+                const u = normalizarUnidade(a.unidade);
+                if (!mapaUnidades[u]) mapaUnidades[u] = { nome: u, atendimentos: 0, pesquisas: 0 };
+                mapaUnidades[u].atendimentos++;
             });
 
-            // 2. Processa Pesquisas (Usa normalizarUnidade)
             pesquisas.forEach(p => {
-                const nomeOriginal = p[KEYS.unidade] || 'Indefinida'; 
-                const nomeNormalizado = normalizarUnidade(nomeOriginal);
-                
-                if (!mapaUnidades[nomeNormalizado]) {
-                    mapaUnidades[nomeNormalizado] = { nome: nomeNormalizado, atendimentos: 0, pesquisas: 0 };
-                }
-                mapaUnidades[nomeNormalizado].pesquisas++;
+                const rawUnidade = p[KEYS.unidade]; 
+                const u = normalizarUnidade(rawUnidade);
+                if (!mapaUnidades[u]) mapaUnidades[u] = { nome: u, atendimentos: 0, pesquisas: 0 };
+                mapaUnidades[u].pesquisas++;
             });
 
             renderizarComparativo(mapaUnidades);
@@ -308,26 +465,17 @@
             if (!container) return;
             container.innerHTML = '';
 
-            // Converte para lista e ordena
             const lista = Object.values(mapa).sort((a, b) => b.atendimentos - a.atendimentos);
-            
-            if (lista.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-400 py-8 text-sm">Nenhum dado disponível.</div>';
-                return;
-            }
-
             const maxVal = Math.max(...lista.map(i => Math.max(i.atendimentos, i.pesquisas))) || 1;
 
             lista.forEach(item => {
                 const pctAtendimentos = (item.atendimentos / maxVal) * 100;
                 const pctPesquisas = (item.pesquisas / maxVal) * 100;
                 
-                // Evita divisão por zero
                 let taxaUnidade = 0;
                 if (item.atendimentos > 0) {
                     taxaUnidade = ((item.pesquisas / item.atendimentos) * 100).toFixed(1);
                 } else if (item.pesquisas > 0) {
-                    // Caso raro: tem pesquisa mas não tem atendimento registrado (dados antigos?)
                     taxaUnidade = "100+"; 
                 }
 
@@ -341,7 +489,7 @@
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2">
                             <div class="flex-1 bg-gray-100 rounded-r-full h-3 overflow-hidden">
-                                <div class="bg-bioteste-primary h-full rounded-r-full chart-bar relative group" style="width: ${pctAtendimentos}%">
+                                <div class="bg-bioteste-primary h-full rounded-r-full chart-bar relative group" style="width: ${Math.max(pctAtendimentos, 5)}%">
                                     <div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-[8px] text-white font-bold px-1">${item.atendimentos}</div>
                                 </div>
                             </div>
@@ -349,7 +497,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="flex-1 bg-gray-100 rounded-r-full h-3 overflow-hidden">
-                                <div class="bg-green-500 h-full rounded-r-full chart-bar relative" style="width: ${pctPesquisas}%">
+                                <div class="bg-green-500 h-full rounded-r-full chart-bar relative" style="width: ${Math.max(pctPesquisas, 5)}%">
                                     <div class="absolute right-1 top-1/2 transform -translate-y-1/2 text-[8px] text-white font-bold px-1">${item.pesquisas}</div>
                                 </div>
                             </div>
@@ -385,7 +533,6 @@
                     if(!isNaN(d)) dataStr = d.toLocaleDateString('pt-BR');
                 }
 
-                // Usa a função normalizar para mostrar o nome limpo no card também
                 const unidadeLimpa = normalizarUnidade(p[KEYS.unidade]);
 
                 card.innerHTML = `
@@ -404,19 +551,15 @@
             });
         }
 
-        // --- NORMALIZADOR DE UNIDADES (FILTRO INTELIGENTE) ---
+        // --- NORMALIZADOR DE UNIDADES ---
         function normalizarUnidade(txt) {
             if (!txt) return "Indefinida";
             const lower = txt.toString().toLowerCase().trim();
-
-            // Regras de Agrupamento Inteligente
-            if (lower.includes("jones")) return "Bioteste Jones dos Santos Neves";
-            if (lower.includes("rio novo")) return "Bioteste Rio Novo";
-            if (lower.includes("central")) return "Bioteste Central";
-            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Bioteste Jerônimo Monteiro";
-            if (lower.includes("sul")) return "Bioteste Sul"; // Caso exista unidade Sul
-            
-            // Se não cair nas regras, retorna formatado (Primeira letra maiúscula)
+            if (lower.includes("jones")) return "Jones dos Santos Neves";
+            if (lower.includes("rio novo")) return "Rio Novo";
+            if (lower.includes("central")) return "Central";
+            if (lower.includes("jeronimo") || lower.includes("jerônimo")) return "Jerônimo Monteiro";
+            if (lower.includes("sul")) return "Sul";
             return txt.trim(); 
         }
 
