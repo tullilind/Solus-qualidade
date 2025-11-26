@@ -253,9 +253,11 @@
             const dataResultadoFiltro = document.getElementById('filtro-resultado').value;
             
             const filtrados = listaCompleta.filter(item => {
-                // Filtro de Texto
-                const nome = (item.nomePaciente || '').toLowerCase();
-                const astra = (item.numeroAtendimento || '').toLowerCase();
+                // Filtro de Texto (CORRIGIDO AQUI)
+                // Força a conversão para String antes do toLowerCase()
+                const nome = String(item.nomePaciente || '').toLowerCase();
+                const astra = String(item.numeroAtendimento || '').toLowerCase();
+                
                 const matchTexto = nome.includes(termo) || astra.includes(termo);
                 if (!matchTexto) return false;
 

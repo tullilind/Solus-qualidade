@@ -5,6 +5,9 @@
 
 const BiotesteLayout = {
     
+    // Configurações
+    apiNotificacoes: "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec",
+
     menuItems: [
         { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', link: 'painel.solus.bioteste.html' },
         { id: 'novo', icon: 'add_circle', label: 'Novo Atendimento', link: 'adicionar.atendimento.html' },
@@ -25,6 +28,9 @@ const BiotesteLayout = {
         this.renderSidebar(activePageId);
         this.renderHeader();
         
+        // Carrega notificações automaticamente
+        this.carregarNotificacoes();
+
         // Fecha dropdown se clicar fora
         document.addEventListener('click', (e) => {
             const drop = document.getElementById('dropdown-notificacoes');
@@ -125,7 +131,7 @@ const BiotesteLayout = {
             </div>
             
             <div class="flex items-center gap-3 relative">
-                <!-- Container de Notificações (RESTAURADO) -->
+                <!-- Container de Notificações -->
                 <div class="relative">
                     <button id="btn-notificacoes" onclick="BiotesteLayout.toggleNotificacoes()" class="relative flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-primary transition-all border border-transparent hover:border-blue-100" title="Notificações">
                         <span class="material-symbols-outlined text-xl">notifications</span>
@@ -133,14 +139,15 @@ const BiotesteLayout = {
                         <span id="notificacao-badge" class="absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white hidden bg-red-500"></span>
                     </button>
 
-                    <!-- Dropdown (Oculto por padrão) -->
-                    <div id="dropdown-notificacoes" class="hidden absolute top-12 right-0 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <!-- Dropdown -->
+                    <div id="dropdown-notificacoes" class="hidden absolute top-12 right-0 w-80 md:w-96 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
                         <div class="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                             <span class="font-bold text-sm text-gray-700">Notificações</span>
-                            <!-- Se a função de carregar existir na página, chama ela, senão recarrega -->
-                            <button onclick="if(typeof carregarNotificacoes === 'function') carregarNotificacoes()" class="text-xs text-primary hover:underline">Atualizar</button>
+                            <button onclick="BiotesteLayout.carregarNotificacoes()" class="text-xs text-bioteste-primary hover:underline flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[10px]">refresh</span> Atualizar
+                            </button>
                         </div>
-                        <div id="lista-notificacoes" class="max-h-64 overflow-y-auto">
+                        <div id="lista-notificacoes" class="max-h-80 overflow-y-auto">
                             <div class="p-4 text-center text-gray-400 text-sm">Carregando...</div>
                         </div>
                     </div>
@@ -154,6 +161,117 @@ const BiotesteLayout = {
                 </div>
             </div>
         `;
+    },
+
+    // Lógica Centralizada de Notificações
+    carregarNotificacoes: async function() {
+        const container = document.getElementById('lista-notificacoes');
+        const badge = document.getElementById('notificacao-badge');
+        const dropdown = document.getElementById('dropdown-notificacoes');
+        
+        if(!container || !badge) return;
+
+        const unidadeUsuario = (this.user.unidade || '').toLowerCase().trim();
+
+        try {
+            const url = `${this.apiNotificacoes}?action=get`; 
+            const response = await fetch(url);
+            const result = await response.json();
+            const dados = result.data || [];
+
+            container.innerHTML = '';
+            
+            const filtrados = dados.filter(n => {
+                const u = (n.unidade || '').toLowerCase().trim();
+                return u === unidadeUsuario || u === 'todos' || u === 'todas';
+            });
+
+            let temRecente = false;
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const ontem = new Date(); ontem.setDate(hoje.getDate() - 1); ontem.setHours(0,0,0,0);
+
+            if (filtrados.length > 0) {
+                badge.classList.remove('hidden');
+                
+                filtrados.forEach(n => {
+                    const dataObj = this._converterData(n.criado_em);
+                    let isHojeOuOntem = false;
+
+                    if(dataObj) {
+                        const dCheck = new Date(dataObj);
+                        dCheck.setHours(0,0,0,0);
+                        if(dCheck.getTime() === hoje.getTime() || dCheck.getTime() === ontem.getTime()) {
+                            temRecente = true;
+                            isHojeOuOntem = true;
+                        }
+                    }
+
+                    // Lógica de URL e Layout
+                    const temUrl = n.url_direcionamento && n.url_direcionamento.trim().length > 5;
+                    const tag = temUrl ? 'a' : 'div';
+                    const href = temUrl ? `href="${n.url_direcionamento}" target="_blank"` : '';
+                    const hoverClass = temUrl ? 'hover:bg-blue-50 cursor-pointer group' : 'hover:bg-gray-50';
+                    const iconLink = temUrl ? '<span class="material-symbols-outlined text-bioteste-primary text-sm mt-0.5">open_in_new</span>' : '';
+                    const textoLink = temUrl ? '<span class="text-[10px] font-bold text-bioteste-primary uppercase mt-2 block tracking-wide">Acessar Link Relacionado</span>' : '';
+
+                    const html = `
+                        <${tag} ${href} class="block p-4 border-b border-gray-100 ${hoverClass} transition-colors">
+                            <div class="flex gap-3 items-start">
+                                <div class="flex-1 min-w-0">
+                                    <!-- Texto com quebra de linha correta -->
+                                    <p class="text-sm text-gray-700 leading-snug break-words whitespace-normal text-left">
+                                        ${n.texto_notificacao}
+                                    </p>
+                                    ${textoLink}
+                                    <p class="text-[10px] text-gray-400 mt-1 text-right">${n.criado_em || ''}</p>
+                                </div>
+                                ${iconLink}
+                            </div>
+                        </${tag}>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+
+                // Define cor do badge
+                badge.className = temRecente 
+                    ? "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-yellow-500 animate-pulse"
+                    : "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500";
+
+                // AUTO OPEN: Abre o dropdown se tiver notificação de hoje ou ontem
+                if (temRecente && dropdown) {
+                    dropdown.classList.remove('hidden');
+                }
+
+            } else {
+                badge.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-8 text-gray-400">
+                        <span class="material-symbols-outlined text-3xl mb-2 opacity-50">notifications_off</span>
+                        <p class="text-xs">Tudo limpo por aqui.</p>
+                    </div>
+                `;
+            }
+        } catch (e) { 
+            console.warn(e); 
+            container.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Erro ao atualizar.</div>';
+        }
+    },
+
+    // Utilitário interno para data
+    _converterData: function(dataString) {
+        if (!dataString) return null;
+        // Tenta formato ISO
+        if (dataString.includes('-') && dataString.length > 10) return new Date(dataString);
+        // Tenta formato BR (dd/mm/yyyy)
+        if (dataString.includes('/')) {
+            const partes = dataString.split('/');
+            if(partes.length === 3) {
+                // Remove hora se houver
+                const ano = partes[2].split(' ')[0];
+                return new Date(ano, partes[1]-1, partes[0]);
+            }
+        }
+        return null;
     },
 
     logout: function() {
