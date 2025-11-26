@@ -44,43 +44,72 @@
             position: relative;
         }
 
-        /* ESTILOS DE IMPRESSÃO (PDF) */
+        /* --- CORREÇÃO PRINCIPAL PARA IMPRESSÃO --- */
         @media print {
             @page { size: A4; margin: 10mm; }
-            body { visibility: visible !important; opacity: 1 !important; background: white; margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             
-            /* Esconde a interface do sistema */
-            #app-sidebar, #app-header, #controls-container, .no-print, #art-secure-badge { display: none !important; }
+            /* 1. Resetar Layout Flex/Screen para Block/Auto */
+            html, body {
+                height: auto !important;
+                width: 100% !important;
+                overflow: visible !important;
+                background: white !important;
+            }
+
+            /* Desativa a estrutura de App (Sidebar/Main com scroll) */
+            #layout-root, main {
+                display: block !important;
+                height: auto !important;
+                overflow: visible !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                position: static !important;
+            }
+
+            /* Esconde elementos da interface */
+            #app-sidebar, #app-header, #controls-container, .no-print, #art-secure-badge { 
+                display: none !important; 
+            }
             
-            main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            .paper-sheet { box-shadow: none; width: 100%; margin: 0; padding: 0; }
+            /* Ajusta a folha para ocupar 100% do papel real */
+            .paper-sheet { 
+                box-shadow: none !important; 
+                width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                min-height: auto !important;
+            }
             
-            /* Quebra de página limpa entre unidades */
-            .page-break { page-break-before: always; }
-            .avoid-break { page-break-inside: avoid; }
+            /* Controle de Quebra de Página */
+            .page-break { page-break-before: always; break-before: page; }
+            .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+            
+            /* Esconde scrollbars nativas se aparecerem */
+            ::-webkit-scrollbar { display: none; }
         }
 
         /* Gráficos CSS simples para impressão */
-        .mini-bar-container { width: 80px; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 4px; }
-        .mini-bar { height: 100%; border-radius: 3px; }
+        .mini-bar-container { width: 80px; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 4px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        .mini-bar { height: 100%; border-radius: 3px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         
         table.report-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
-        table.report-table th { text-align: left; border-bottom: 2px solid #e5e7eb; padding: 6px; color: #374151; font-weight: 700; text-transform: uppercase; font-size: 10px; background-color: #f9fafb; }
+        table.report-table th { text-align: left; border-bottom: 2px solid #e5e7eb; padding: 6px; color: #374151; font-weight: 700; text-transform: uppercase; font-size: 10px; background-color: #f9fafb; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         table.report-table td { border-bottom: 1px solid #f3f4f6; padding: 6px; color: #4b5563; vertical-align: middle; }
         table.report-table tr:last-child td { border-bottom: none; }
 
         /* Tabela de Comentários */
         table.comments-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e5e7eb; }
-        table.comments-table th { background-color: #f3f4f6; padding: 6px; text-align: left; font-weight: bold; color: #374151; }
+        table.comments-table th { background-color: #f3f4f6; padding: 6px; text-align: left; font-weight: bold; color: #374151; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         table.comments-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-        .comment-text { font-style: italic; color: #4b5563; background-color: #fefce8; padding: 4px; border-radius: 4px; display: block; margin-top: 2px; }
+        .comment-text { font-style: italic; color: #4b5563; background-color: #fefce8; padding: 4px; border-radius: 4px; display: block; margin-top: 2px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     </style>
 </head>
 
-<body class="font-display bg-gray-100 overflow-y-auto">
+<body class="font-display bg-gray-100 overflow-hidden"> <!-- overflow-hidden no body para funcionar o scroll interno na tela -->
 
-    <!-- 2. ESTRUTURA DO LAYOUT -->
-    <div class="flex h-screen w-full">
+    <!-- 2. ESTRUTURA DO LAYOUT COM ID PARA CONTROLE -->
+    <div id="layout-root" class="flex h-screen w-full">
         <aside id="app-sidebar" class="fixed left-0 top-0 z-10 flex h-full w-64 flex-col bg-white/90 backdrop-blur-lg border-r border-gray-200/80 shadow-sm transition-transform duration-300 lg:translate-x-0 -translate-x-full no-print"></aside>
 
         <main class="lg:ml-64 w-full flex-1 flex-col h-full overflow-y-auto relative">
@@ -123,7 +152,7 @@
             </div>
 
             <!-- ÁREA DO PAPEL (RELATÓRIO) -->
-            <div class="pb-20 print:pb-0">
+            <div class="pb-20 print:pb-0 print:w-full">
                 <div id="paper" class="paper-sheet">
                     
                     <!-- Cabeçalho do Relatório -->
@@ -139,7 +168,7 @@
                     </div>
 
                     <!-- Filtros Aplicados -->
-                    <div class="bg-gray-50 p-3 rounded border border-gray-200 mb-8 text-xs text-gray-600 flex gap-6">
+                    <div class="bg-gray-50 p-3 rounded border border-gray-200 mb-8 text-xs text-gray-600 flex gap-6 print:bg-transparent print:border-gray-300">
                         <span><strong>Período:</strong> <span id="lbl-periodo">--</span></span>
                         <span><strong>Filtro Unidade:</strong> <span id="lbl-unidade">Todas</span></span>
                         <span><strong>Total de Participações:</strong> <span id="lbl-total">0</span></span>
@@ -214,11 +243,12 @@
                     gerarRelatorio(); // Gera automático ao carregar
                 }
             } catch (e) {
-                alert("Erro ao carregar dados da API.");
+                // Em caso de erro, remove mensagem de carregamento
+                document.getElementById('report-content').innerHTML = '<div class="text-center text-red-500 py-10">Erro ao carregar dados. Verifique a conexão.</div>';
             }
         }
 
-        // --- Normalização Robusta (Igual ao Painel) ---
+        // --- Normalização Robusta ---
         function normalizarUnidade(txt) {
             if (!txt) return "Indefinida";
             const lower = txt.toString().toLowerCase().trim();
@@ -261,7 +291,6 @@
                     if (fFim && dataReg > new Date(fFim+'T00:00:00')) return false;
                 }
                 
-                // Correção: Se unidade selecionada, filtra estritamente pelo nome normalizado
                 if (fUnidade && fUnidade !== "") {
                     if (normalizarUnidade(d[KEY_UNIDADE]) !== fUnidade) return false;
                 }
@@ -276,7 +305,6 @@
             // 3. Agrupamento
             const grupos = {};
             filtrados.forEach(d => {
-                // Agrupa pelo nome normalizado para juntar "Jones" com "Bioteste Jones"
                 const nomeNorm = normalizarUnidade(d[KEY_UNIDADE]);
                 if (!grupos[nomeNorm]) grupos[nomeNorm] = [];
                 grupos[nomeNorm].push(d);
@@ -303,6 +331,7 @@
 
                 // Cria o bloco da unidade
                 const section = document.createElement('div');
+                // Se não for o primeiro, força quebra de página ANTES dele
                 if (index > 0) section.className = "avoid-break mt-8 pt-8 border-t-4 border-gray-100 page-break";
                 else section.className = "avoid-break";
 
