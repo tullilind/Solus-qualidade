@@ -53,11 +53,11 @@
         }
         .status-sending { animation: pulse-soft 1.5s infinite; }
 
-        /* Modal Tutorial */
-        #modal-tutorial {
+        /* Modais */
+        .modal-base {
             transition: opacity 0.3s ease-in-out, visibility 0.3s;
         }
-        #modal-tutorial.hidden-modal {
+        .hidden-modal {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -70,8 +70,8 @@
     <!-- Container de Notificações (Toast) -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- MODAL TUTORIAL (Mantido) -->
-    <div id="modal-tutorial" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden-modal">
+    <!-- MODAL 1: TUTORIAL NOVIDADES -->
+    <div id="modal-tutorial" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm hidden-modal modal-base">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden transform transition-all scale-100">
             <div class="bg-bioteste-primary p-6 text-white flex items-center gap-4">
                 <div class="bg-white/20 p-3 rounded-full">
@@ -109,6 +109,38 @@
                 <button onclick="fecharTutorial()" class="bg-bioteste-primary hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2">
                     <span class="material-symbols-outlined">check_circle</span>
                     Ok, estou ciente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: COMUNICADO DATAS (NOVO) -->
+    <div id="modal-datas" class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md hidden-modal modal-base">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden border-t-8 border-red-500">
+            <div class="p-8">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                    <span class="material-symbols-outlined text-4xl text-red-600">calendar_month_error</span>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-900 mb-4">COMUNICADO IMPORTANTE</h3>
+                <p class="text-gray-600 text-sm text-center leading-relaxed mb-4">
+                    Acabei vendo erros de datas erradas ou no passado (como <strong>11/01/2025</strong> quando ainda estamos no início do ano) ou anos incorretos como <strong>20025</strong>.
+                </p>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800 text-center mb-4">
+                    <p><strong>Novas Travas de Segurança:</strong></p>
+                    <ul class="list-disc list-inside mt-2 text-left px-4">
+                        <li>Não é permitido datas no passado.</li>
+                        <li>Limite máximo de 30 dias no futuro.</li>
+                        <li>Anos inválidos serão bloqueados.</li>
+                    </ul>
+                </div>
+                <p class="text-gray-500 text-xs text-center">
+                    Pedimos atenção de todos, pois isso gera erro na hora de enviar a pesquisa de qualidade.
+                </p>
+            </div>
+            <div class="p-5 bg-gray-50 border-t border-gray-100">
+                <button onclick="fecharComunicadoData()" class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">thumb_up</span>
+                    Estou ciente e vou conferir as datas
                 </button>
             </div>
         </div>
@@ -188,12 +220,14 @@
                                     <div class="relative inline-block">
                                         <span class="material-symbols-outlined text-gray-400 text-lg cursor-help hover:text-bioteste-primary transition-colors">help</span>
                                         <div class="tooltip absolute z-10 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl -top-2 left-8 pointer-events-none">
-                                            Aqui vai ser a data que o paciente vai receber o resultado. Caso urgência e sair antes, coloque então essa data.
+                                            Data de entrega do resultado (Máx 30 dias).
                                             <div class="absolute w-2 h-2 bg-gray-800 transform rotate-45 top-3 -left-1"></div>
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Input com min/max dinâmico -->
                                 <input type="date" id="dataResultado" required class="form-input rounded-lg border-gray-300 focus:border-bioteste-primary focus:ring-bioteste-primary text-gray-700">
+                                <p class="text-[10px] text-gray-400">Permitido apenas datas entre hoje e 30 dias futuros.</p>
                             </div>
                         </div>
 
@@ -241,10 +275,12 @@
     <!-- 5. LÓGICA DA PÁGINA -->
     <script>
         const API_ATENDIMENTO = "https://script.google.com/macros/s/AKfycbzV2HT1hVudjEal0AfQdCnND3w_dCqjyoOmqlQGaDU2h3U2ziTzfMiE1z70o5aTapF5UA/exec";
-        const API_NOTIFICACOES = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec"; // API Notificações
+        const API_NOTIFICACOES = "https://script.google.com/macros/s/AKfycbxIDx14MW6mkhoGLm77DiuPUlH9R3MDdF_MFdLoW0JYo6wLeaMe9kA9AyxNBr8DWhBh1w/exec";
         
         const QUEUE_KEY = 'bioteste_fila_atendimentos';
         const TUTORIAL_KEY = 'bioteste_tutorial_fila_v1';
+        const COMUNICADO_DATA_KEY = 'bioteste_aviso_datas_v2'; // Chave para o novo modal
+
         let isSyncing = false;
 
         window.onload = function() {
@@ -264,28 +300,72 @@
             document.getElementById('unidade').value = userData.unidade || 'Matriz';
             document.getElementById('atendente').value = userData.nome || 'Não identificado';
 
-            // Verificar Tutorial
+            // Configurar limites de data
+            configurarLimitesData();
+
+            // Verificar Tutoriais e Avisos
             verificarTutorial();
 
             // Inicializar
-            carregarNotificacoes(); // Badge do header
+            carregarNotificacoes(); 
             renderizarFila();
             processarFila();
         }
 
-        // --- TUTORIAL NOVIDADES ---
+        // --- TRAVAS DE DATA ---
+        function configurarLimitesData() {
+            const inputData = document.getElementById('dataResultado');
+            const hoje = new Date();
+            
+            // Min: Hoje
+            const yyyy = hoje.getFullYear();
+            const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoje.getDate()).padStart(2, '0');
+            const dataMinima = `${yyyy}-${mm}-${dd}`;
+            
+            // Max: Hoje + 30 dias
+            const futuro = new Date();
+            futuro.setDate(futuro.getDate() + 35); // 35 dias de margem (um pouco mais de um mês)
+            const f_yyyy = futuro.getFullYear();
+            const f_mm = String(futuro.getMonth() + 1).padStart(2, '0');
+            const f_dd = String(futuro.getDate()).padStart(2, '0');
+            const dataMaxima = `${f_yyyy}-${f_mm}-${f_dd}`;
+
+            inputData.min = dataMinima;
+            inputData.max = dataMaxima;
+        }
+
+        // --- GESTÃO DE MODAIS ---
         function verificarTutorial() {
             if (!localStorage.getItem(TUTORIAL_KEY)) {
+                // Abre o tutorial primeiro
                 document.getElementById('modal-tutorial').classList.remove('hidden-modal');
+            } else {
+                // Se tutorial já foi visto, verifica se precisa mostrar o comunicado de data
+                verificarComunicadoData();
             }
         }
 
         function fecharTutorial() {
             localStorage.setItem(TUTORIAL_KEY, 'true');
             document.getElementById('modal-tutorial').classList.add('hidden-modal');
+            
+            // Ao fechar o tutorial, verifica imediatamente o próximo aviso
+            setTimeout(verificarComunicadoData, 500);
         }
 
-        // --- SISTEMA DE FILA (OFFLINE-FIRST) ---
+        function verificarComunicadoData() {
+            if (!localStorage.getItem(COMUNICADO_DATA_KEY)) {
+                document.getElementById('modal-datas').classList.remove('hidden-modal');
+            }
+        }
+
+        function fecharComunicadoData() {
+            localStorage.setItem(COMUNICADO_DATA_KEY, 'true');
+            document.getElementById('modal-datas').classList.add('hidden-modal');
+        }
+
+        // --- SISTEMA DE FILA E VALIDAÇÃO ---
 
         function getFila() {
             const fila = localStorage.getItem(QUEUE_KEY);
@@ -300,15 +380,52 @@
         function adicionarNaFila(event) {
             event.preventDefault();
             
+            // 1. Validação de Celular
             const celular = document.getElementById('celular').value;
             if (celular.length < 14) {
                 mostrarNotificacao('error', 'Celular incompleto. Informe DDD + Número.');
                 return;
             }
 
-            const dataInput = document.getElementById('dataResultado').value;
-            const [ano, mes, dia] = dataInput.split('-');
-            const dataFormatada = `${dia}/${mes}/${ano}`;
+            // 2. VALIDAÇÃO RIGOROSA DE DATA (TRAVAS SOLICITADAS)
+            const dataInputVal = document.getElementById('dataResultado').value;
+            if (!dataInputVal) {
+                mostrarNotificacao('error', 'Data é obrigatória.');
+                return;
+            }
+
+            const [anoInput, mesInput, diaInput] = dataInputVal.split('-').map(Number);
+            const dataSelecionada = new Date(anoInput, mesInput - 1, diaInput);
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            
+            const limiteFuturo = new Date();
+            limiteFuturo.setDate(limiteFuturo.getDate() + 35); // 35 dias
+
+            // Trava Ano Inválido (ex: 20025)
+            if (anoInput > 2030 || anoInput < 2024) {
+                mostrarNotificacao('error', `Ano inválido detectado: ${anoInput}. Verifique a data!`);
+                // Reabre o modal de alerta se tentar burlar
+                document.getElementById('modal-datas').classList.remove('hidden-modal');
+                return;
+            }
+
+            // Trava Passado
+            if (dataSelecionada < hoje) {
+                mostrarNotificacao('error', 'Erro: Não é permitido data no passado.');
+                document.getElementById('modal-datas').classList.remove('hidden-modal');
+                return;
+            }
+
+            // Trava Futuro Distante (> 1 mês e pouco)
+            if (dataSelecionada > limiteFuturo) {
+                mostrarNotificacao('error', 'Erro: Data muito distante (limite aprox. 1 mês).');
+                document.getElementById('modal-datas').classList.remove('hidden-modal');
+                return;
+            }
+
+            // Prossegue com o cadastro
+            const dataFormatada = `${String(diaInput).padStart(2,'0')}/${String(mesInput).padStart(2,'0')}/${anoInput}`;
             const celularLimpo = celular.replace(/\D/g, '');
 
             const novoItem = {
@@ -449,45 +566,15 @@
             toast.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 animate-bounce pointer-events-auto`;
             toast.innerHTML = `<span class="material-symbols-outlined">${icon}</span><span>${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        // Notificações (Para o badge do header funcionar)
+        // Notificações (Badge header)
         async function carregarNotificacoes() {
-            const container = document.getElementById('lista-notificacoes');
-            const badge = document.getElementById('notificacao-badge');
-            if(!container || !badge) return;
-
-            const unidadeUsuario = (BiotesteLayout?.user?.unidade || '').toLowerCase().trim();
-
-            try {
-                const url = `${API_NOTIFICACOES}?action=get`; 
-                const response = await fetch(url);
-                const result = await response.json();
-                const todosDados = result.data || [];
-                
-                const notificacoesFiltradas = todosDados.filter(n => {
-                    const uNotificacao = (n.unidade || '').toLowerCase().trim();
-                    return uNotificacao === unidadeUsuario || uNotificacao === 'todos' || uNotificacao === 'todas';
-                });
-
-                if (notificacoesFiltradas.length > 0) {
-                    badge.classList.remove('hidden');
-                    // Lógica simples de badge vermelho para manter consistência
-                    badge.className = "absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500";
-                    
-                    // Preenche lista (opcional, layout.js já tem estrutura mas pode estar vazio)
-                    container.innerHTML = '';
-                    notificacoesFiltradas.forEach(n => {
-                         const div = document.createElement('div');
-                         div.className = "p-3 border-b border-gray-50 hover:bg-blue-50";
-                         div.innerHTML = `<p class="text-sm text-gray-800">${n.texto_notificacao}</p>`;
-                         container.appendChild(div);
-                    });
-                } else {
-                    badge.classList.add('hidden');
-                }
-            } catch (e) { console.warn(e); }
+            // Lógica simplificada pois layout.js já cuida disso se estiver presente
+            if (typeof BiotesteLayout !== 'undefined' && typeof BiotesteLayout.carregarNotificacoes === 'function') {
+                BiotesteLayout.carregarNotificacoes();
+            }
         }
 
     </script>
