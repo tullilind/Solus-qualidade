@@ -1,44 +1,42 @@
 <!DOCTYPE html>
-<html class="light" lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Bioteste Solus - Acesso Seguro</title>
+    <title>System Halted | Bioteste Solus</title>
     
-    <!-- PWA & Favicon -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#005A9C">
-    <link rel="icon" type="image/png" href="logo.png">
-
-    <!-- Dependências -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-    
+
     <script>
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "bioteste-primary": "#005A9C",
-                        "bioteste-secondary": "#4D9DE0",
-                        "bioteste-dark": "#0f172a",
+                        "terminal-black": "#050505",
+                        "terminal-green": "#00ff41",
+                        "terminal-red": "#ff0033",
+                        "terminal-gray": "#1a1a1a",
                     },
-                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                    fontFamily: {
+                        "mono": ["'JetBrains Mono'", "monospace"],
+                        "sans": ["'Inter'", "sans-serif"],
+                    },
                     animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scanline': 'scanline 8s linear infinite',
+                        'glitch': 'glitch 1s linear infinite',
                     },
                     keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' },
                         },
-                        fadeInUp: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
                         }
                     }
                 },
@@ -47,367 +45,184 @@
     </script>
 
     <style>
-        body { background-color: #f8fafc; overflow-x: hidden; }
-        .hidden-view { display: none !important; }
-        
-        /* Input Customizado */
-        .input-group:focus-within .input-icon { color: #005A9C; }
-        .input-group:focus-within input { border-color: #005A9C; ring: 2px; --tw-ring-color: rgba(0, 90, 156, 0.2); }
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Efeito CRT (Monitor Antigo) */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Scrollbar hacker style */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border: 1px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff0033; }
+
+        .terminal-text { text-shadow: 0 0 5px rgba(255, 0, 51, 0.5); }
     </style>
 </head>
 
-<body class="font-display flex items-center justify-center min-h-screen relative">
+<body class="crt font-sans min-h-screen flex items-center justify-center p-4 relative">
 
-    <!-- Background Animado -->
-    <div class="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-slate-50">
-        <div class="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-3xl animate-float"></div>
-        <div class="absolute top-[20%] -left-[10%] w-[30%] h-[30%] rounded-full bg-purple-400/10 blur-3xl animate-float" style="animation-delay: 2s"></div>
-        <div class="absolute bottom-[10%] right-[20%] w-[20%] h-[20%] rounded-full bg-green-400/10 blur-3xl animate-float" style="animation-delay: 4s"></div>
+    <div class="fixed inset-0 z-0 opacity-10 pointer-events-none overflow-hidden">
+        <div class="w-full h-2 bg-white blur-sm animate-scanline"></div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
-
-    <!-- Main Card -->
-    <div class="relative z-10 w-full max-w-5xl p-4 animate-fade-in-up">
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] border border-white/50">
+    <div class="relative z-10 w-full max-w-4xl bg-terminal-gray/80 backdrop-blur-md border border-gray-800 rounded-lg shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <div class="w-full md:w-3/5 p-8 md:p-10 border-r border-gray-800 relative">
             
-            <!-- Lado Esquerdo: Banner (Visual Premium) -->
-            <div class="w-full md:w-5/12 bg-gradient-to-br from-bioteste-primary to-blue-800 p-12 text-white flex flex-col justify-between relative overflow-hidden">
-                <!-- Decorative Patterns -->
-                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"></div>
-                
-                <div class="relative z-10">
-                    <div class="flex items-center gap-2 mb-8">
-                        <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                            <span class="material-symbols-outlined text-2xl">science</span>
-                        </div>
-                        <span class="font-bold tracking-wide text-sm uppercase opacity-80">Sistema Solus</span>
-                    </div>
-                    <h1 class="text-4xl font-black leading-tight mb-4">Excelência em<br>Diagnóstico</h1>
-                    <p class="text-blue-100 text-sm leading-relaxed opacity-90">
-                        Plataforma integrada de gestão laboratorial com inteligência de dados e segurança avançada.
+            <div class="flex justify-between items-start mb-8">
+                <div>
+                    <h1 class="text-3xl font-black text-white tracking-tighter uppercase">Bioteste Solus</h1>
+                    <span class="text-xs font-mono text-gray-500">SYSTEM ID: #SOL-2026-BETA</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-1 bg-red-950/30 border border-red-900 rounded text-red-500 animate-pulse-fast">
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span class="text-xs font-bold font-mono tracking-widest">OFFLINE</span>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="p-4 bg-white/5 border-l-2 border-green-500 rounded-r">
+                    <h2 class="text-lg font-bold text-white mb-2">Relatório de Migração</h2>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        Nosso sistema de qualidade Beta foi um <strong>sucesso absoluto</strong>. Agradeço a todos os usuários que contribuíram com dados e feedback. Estamos encerrando este ciclo para iniciar uma nova era.
                     </p>
                 </div>
 
-                <div class="relative z-10 mt-12">
-                    <div class="flex items-center gap-3 text-xs font-medium opacity-70">
-                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">verified_user</span> Ambiente Seguro</span>
-                        <span>•</span>
-                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">encrypted</span> Criptografia SSL</span>
+                <div class="space-y-4 text-sm text-gray-400">
+                    <p>
+                        <span class="text-white font-bold">O que muda?</span><br>
+                        O portal vai mudar de casa. O que era bom, agora melhorou. Estamos iniciando a transferência de servidores e o novo ambiente estará ativo até <strong class="text-white">segunda-feira</strong>.
+                    </p>
+                    
+                    <p>
+                        Eu, <strong class="text-blue-400">João Vitor</strong>, entrarei em contato individualmente para fornecer as novas credenciais e explicar os novos módulos de acesso.
+                    </p>
+                </div>
+
+                <div class="mt-6 p-4 border border-red-900/50 bg-red-950/10 rounded relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-red-500/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-700"></div>
+                    <div class="relative flex gap-3">
+                        <span class="material-symbols-outlined text-red-500 text-3xl">gpp_bad</span>
+                        <div>
+                            <h3 class="text-red-500 font-bold text-sm uppercase mb-1">Aviso de Auditoria</h3>
+                            <p class="text-xs text-red-200/80 leading-relaxed">
+                                A ausência de registro nas pesquisas foi detectada e registrada como <strong>NÃO CONFORMIDADE</strong>. O motivo dessa falha será auditado individualmente na migração para o novo sistema.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Lado Direito: Formulários -->
-            <div class="w-full md:w-7/12 p-8 md:p-12 flex flex-col justify-center bg-white relative">
-                
-                <!-- VIEW 1: LOGIN -->
-                <div id="view-login" class="w-full max-w-sm mx-auto animate-fade-in-up" style="animation-delay: 0.1s">
-                    <div class="mb-8">
-                        <h2 class="text-2xl font-bold text-gray-800">Bem-vindo de volta</h2>
-                        <p class="text-gray-500 text-sm mt-1">Insira suas credenciais para acessar.</p>
-                    </div>
-
-                    <form onsubmit="fazerLogin(event)" class="space-y-5">
-                        
-                        <!-- Usuário -->
-                        <div class="input-group">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Usuário</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 input-icon transition-colors">person</span>
-                                <!-- ADICIONADO: class uppercase e oninput para garantir visual maiúsculo -->
-                                <input id="login-usuario" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-700 focus:outline-none transition-all bg-gray-50 focus:bg-white placeholder:text-gray-400 uppercase" placeholder="SEU USUÁRIO" oninput="this.value = this.value.toUpperCase()">
-                            </div>
-                        </div>
-
-                        <!-- Senha -->
-                        <div class="input-group">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Senha</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 input-icon transition-colors">lock</span>
-                                <input id="login-senha" type="password" required class="w-full pl-10 pr-12 py-3 rounded-xl border border-gray-200 text-gray-700 focus:outline-none transition-all bg-gray-50 focus:bg-white placeholder:text-gray-400" placeholder="••••••••">
-                                <button type="button" onclick="toggleSenha('login-senha', this)" class="absolute right-3 top-3 text-gray-400 hover:text-bioteste-primary transition-colors">
-                                    <span class="material-symbols-outlined">visibility_off</span>
-                                </button>
-                            </div>
-                            <div class="text-right mt-1">
-                                <button type="button" onclick="switchView('recover-step1')" class="text-xs text-bioteste-primary font-bold hover:underline">Esqueceu a senha?</button>
-                            </div>
-                        </div>
-
-                        <!-- Botão -->
-                        <button type="submit" id="btn-entrar" class="w-full bg-bioteste-primary hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
-                            <span>Entrar no Sistema</span>
-                            <span class="material-symbols-outlined text-lg">login</span>
-                        </button>
-
-                    </form>
-                </div>
-
-                <!-- VIEW 2: USUÁRIO SALVO (Welcome Back) -->
-                <div id="view-welcome" class="hidden-view w-full max-w-sm mx-auto text-center animate-fade-in-up">
-                    <div class="mb-6 relative inline-block">
-                        <div class="w-24 h-24 bg-gradient-to-br from-bioteste-primary to-blue-400 rounded-full flex items-center justify-center text-white shadow-xl mx-auto">
-                            <span class="material-symbols-outlined text-5xl">person</span>
-                        </div>
-                        <div class="absolute bottom-0 right-0 bg-green-500 w-6 h-6 rounded-full border-4 border-white"></div>
-                    </div>
-                    
-                    <h2 class="text-2xl font-bold text-gray-800">Olá, <span id="welcome-nome" class="text-bioteste-primary">Usuário</span>!</h2>
-                    <p class="text-gray-500 text-sm mt-1 mb-8">Sessão ativa em <strong id="welcome-unidade">Matriz</strong></p>
-
-                    <div class="space-y-3">
-                        <button onclick="entrarSalvo()" class="w-full bg-bioteste-primary hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2">
-                            <span>Continuar Acesso</span>
-                            <span class="material-symbols-outlined">arrow_forward</span>
-                        </button>
-                        <button onclick="sairConta()" class="w-full bg-white border border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 transition-all">
-                            Trocar de Conta
-                        </button>
-                    </div>
-                </div>
-
-                <!-- VIEW 3: RECUPERAR - ETAPA 1 -->
-                <div id="view-recover-step1" class="hidden-view w-full max-w-sm mx-auto animate-fade-in-up">
-                    <button onclick="switchView('login')" class="mb-6 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm font-bold transition-colors">
-                        <span class="material-symbols-outlined text-lg">arrow_back</span> Voltar
-                    </button>
-                    
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Recuperação</h2>
-                        <p class="text-gray-500 text-sm mt-1">Informe seu usuário para receber o código.</p>
-                    </div>
-
-                    <form onsubmit="recuperarEtapa1(event)" class="space-y-5">
-                        <div class="input-group">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Usuário</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 input-icon">account_circle</span>
-                                <!-- ADICIONADO: uppercase também na recuperação -->
-                                <input id="recover-usuario" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-700 focus:outline-none bg-gray-50 focus:bg-white transition-all uppercase" oninput="this.value = this.value.toUpperCase()">
-                            </div>
-                        </div>
-                        <button type="submit" id="btn-rec-1" class="w-full bg-bioteste-primary hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">Enviar Código</button>
-                    </form>
-                </div>
-
-                <!-- VIEW 4: RECUPERAR - ETAPA 2 -->
-                <div id="view-recover-step2" class="hidden-view w-full max-w-sm mx-auto animate-fade-in-up">
-                    <button onclick="switchView('recover-step1')" class="mb-6 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm font-bold transition-colors">
-                        <span class="material-symbols-outlined text-lg">arrow_back</span> Voltar
-                    </button>
-
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Nova Senha</h2>
-                        <p class="text-gray-500 text-sm mt-1">Digite o código recebido e sua nova senha.</p>
-                    </div>
-
-                    <form onsubmit="recuperarEtapa2(event)" class="space-y-5">
-                        <div class="input-group">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Código (Token)</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 input-icon">vpn_key</span>
-                                <input id="recover-token" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-700 focus:outline-none bg-gray-50 focus:bg-white transition-all" placeholder="Ex: 1234">
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Nova Senha</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 input-icon">lock_reset</span>
-                                <input id="recover-novasenha" type="password" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-700 focus:outline-none bg-gray-50 focus:bg-white transition-all" placeholder="Nova senha forte">
-                            </div>
-                        </div>
-                        <button type="submit" id="btn-rec-2" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">Redefinir Senha</button>
-                    </form>
-                </div>
-
+            <div class="mt-8 pt-6 border-t border-gray-800 flex justify-between items-center text-xs text-gray-600 font-mono">
+                <span>PROJECT: AR SOLUS SIX</span>
+                <span>ENCERRADO EM: 22/01/2026</span>
             </div>
         </div>
-        
-        <p class="mt-8 text-center text-slate-400 text-xs font-medium uppercase tracking-widest opacity-60">© 2025 Bioteste Solus • Versão 2.0</p>
+
+        <div class="w-full md:w-2/5 bg-black p-6 font-mono text-xs flex flex-col justify-between border-t md:border-t-0 md:border-l border-gray-800 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-2 opacity-50">
+                <span class="material-symbols-outlined text-gray-800 text-6xl">code_off</span>
+            </div>
+
+            <div class="relative z-10 h-full flex flex-col">
+                <div class="mb-2 text-gray-500 border-b border-gray-800 pb-2">
+                    > root@bioteste:~# ./shutdown_sequence.sh
+                </div>
+                
+                <div id="terminal-log" class="flex-1 overflow-hidden flex flex-col justify-end space-y-1 text-gray-400 h-[300px]">
+                    </div>
+
+                <div class="mt-4">
+                    <div class="flex justify-between text-[10px] text-gray-500 mb-1 uppercase">
+                        <span>Migração de Dados</span>
+                        <span id="progress-text">0%</span>
+                    </div>
+                    <div class="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-terminal-red w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Módulos de Sistema (Segurança + PWA) -->
-    <script src="art.secure.js"></script>
-    <script src="pwa-init.js"></script>
-
-    <!-- LÓGICA -->
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxTddEXR4zQY7oP7CLH--0AECYJa-xJsTzxwUzuF1DcsM9FXAdzYTi1pDB3BRNR5pphFg/exec";
+        const logs = [
+            { text: "Iniciando protocolo de encerramento...", delay: 500, color: "text-white" },
+            { text: "Conexão com banco de dados... ENCERRADA", delay: 1200, color: "text-red-400" },
+            { text: "Exportando logs de usuários...", delay: 2000, color: "text-yellow-500" },
+            { text: "Verificando integridade Beta... OK", delay: 2800, color: "text-green-500" },
+            { text: "Compactando arquivos de sistema...", delay: 3500, color: "text-gray-400" },
+            { text: "Desativando módulos de login...", delay: 4500, color: "text-red-400" },
+            { text: "ALERTA: Pendências de pesquisa detectadas", delay: 5200, color: "text-terminal-red font-bold" },
+            { text: "Registrando não conformidades...", delay: 6000, color: "text-white" },
+            { text: "Salvando backup em AR SOLUS SIX...", delay: 7000, color: "text-blue-400" },
+            { text: "Aguardando reinicialização manual (Segunda-feira)", delay: 8500, color: "text-gray-500" },
+            { text: "SISTEMA DESATIVADO.", delay: 9500, color: "text-red-500 font-bold blink" }
+        ];
 
-        window.addEventListener('load', () => {
-            // Força inicialização da segurança na tela de login (override do padrão)
-            if (typeof ArtSecure !== 'undefined') ArtSecure.init();
-            verificarUsuarioSalvo();
-        });
+        const logContainer = document.getElementById('terminal-log');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
 
-        // --- Gerenciamento de Sessão ---
-
-        function verificarUsuarioSalvo() {
-            const dadosSalvos = localStorage.getItem('bioteste_user');
-            if (dadosSalvos) {
-                try {
-                    const user = JSON.parse(dadosSalvos);
-                    document.getElementById('welcome-nome').textContent = user.nome?.split(' ')[0] || 'Usuário';
-                    document.getElementById('welcome-unidade').textContent = user.unidade || 'Matriz';
-                    switchView('welcome');
-                } catch (e) {
-                    localStorage.removeItem('bioteste_user');
-                    switchView('login');
-                }
-            } else {
-                switchView('login');
-            }
+        function addLog(message, color) {
+            const line = document.createElement('div');
+            // Data atual hora minuto segundo
+            const now = new Date();
+            const time = now.toLocaleTimeString('pt-BR', { hour12: false });
+            
+            line.innerHTML = `<span class="opacity-50">[${time}]</span> <span class="${color}">${message}</span>`;
+            logContainer.appendChild(line);
         }
 
-        function entrarSalvo() {
-            const dadosSalvos = localStorage.getItem('bioteste_user');
-            if(dadosSalvos) {
-                const user = JSON.parse(dadosSalvos);
-                redirecionarUsuario(user.acesso);
-            } else {
-                window.location.href = "tokem.solus.html";
-            }
-        }
-
-        function redirecionarUsuario(acesso) {
-            if (acesso === 'adm') {
-                window.location.href = "admqualidade/boasvindasadm.html";
-            } else {
-                window.location.href = "boas.vindas.html";
-            }
-        }
-
-        function sairConta() {
+        function runSequence() {
+            // Limpa dados salvos antigos
             localStorage.removeItem('bioteste_user');
-            document.getElementById('login-usuario').value = "";
-            document.getElementById('login-senha').value = "";
-            switchView('login');
-        }
 
-        // --- API Login ---
+            let maxDelay = 0;
 
-        async function fazerLogin(event) {
-            event.preventDefault();
-            // CORREÇÃO: Garante Maiúsculas e Remove Espaços
-            const usuario = document.getElementById('login-usuario').value.toUpperCase().trim();
-            const senha = document.getElementById('login-senha').value;
-            const btn = document.getElementById('btn-entrar');
-
-            setLoading(btn, true, "Verificando...");
-
-            try {
-                const url = `${API_URL}?action=login&usuario=${encodeURIComponent(usuario)}&senha=${encodeURIComponent(senha)}`;
-                const response = await fetch(url);
-                const result = await response.json();
-
-                if (result.status === true) {
-                    localStorage.setItem('bioteste_user', JSON.stringify(result.data));
-                    mostrarNotificacao("success", "Acesso Permitido!");
-                    setTimeout(() => { window.location.href = "tokem.solus.html"; }, 1000);
-                } else {
-                    mostrarNotificacao("error", result.message || "Credenciais inválidas.");
-                }
-            } catch (error) {
-                mostrarNotificacao("error", "Erro de conexão.");
-            } finally {
-                setLoading(btn, false, `<span>Entrar no Sistema</span><span class="material-symbols-outlined text-lg">login</span>`);
-            }
-        }
-
-        // --- API Recuperação ---
-
-        async function recuperarEtapa1(event) {
-            event.preventDefault();
-            // CORREÇÃO: Garante Maiúsculas e Remove Espaços na recuperação também
-            const usuario = document.getElementById('recover-usuario').value.toUpperCase().trim();
-            const btn = document.getElementById('btn-rec-1');
-            setLoading(btn, true, "Enviando...");
-
-            try {
-                const res = await fetch(`${API_URL}?action=recoverRequest&usuario=${encodeURIComponent(usuario)}`);
-                const json = await res.json();
-                if (json.status === true) {
-                    mostrarNotificacao("success", "Código enviado para o e-mail!");
-                    switchView('recover-step2');
-                } else {
-                    mostrarNotificacao("error", json.message);
-                }
-            } catch (e) { mostrarNotificacao("error", "Erro ao conectar."); } 
-            finally { setLoading(btn, false, "Enviar Código"); }
-        }
-
-        async function recuperarEtapa2(event) {
-            event.preventDefault();
-            const token = document.getElementById('recover-token').value;
-            const novaSenha = document.getElementById('recover-novasenha').value;
-            const btn = document.getElementById('btn-rec-2');
-            setLoading(btn, true, "Redefinindo...");
-
-            try {
-                const res = await fetch(`${API_URL}?action=recoverReset&tokem=${encodeURIComponent(token)}&nova_senha=${encodeURIComponent(novaSenha)}`);
-                const json = await res.json();
-                if (json.status === true) {
-                    mostrarNotificacao("success", "Senha alterada com sucesso!");
-                    switchView('login');
-                } else {
-                    mostrarNotificacao("error", json.message);
-                }
-            } catch (e) { mostrarNotificacao("error", "Erro ao conectar."); } 
-            finally { setLoading(btn, false, "Redefinir Senha"); }
-        }
-
-        // --- Utils ---
-
-        function switchView(viewName) {
-            ['login', 'welcome', 'recover-step1', 'recover-step2'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden-view');
+            logs.forEach((log) => {
+                maxDelay = Math.max(maxDelay, log.delay);
+                setTimeout(() => {
+                    addLog(log.text, log.color);
+                }, log.delay);
             });
-            
-            const target = document.getElementById(`view-${viewName}`);
-            target.classList.remove('hidden-view');
-            // Reinicia animação
-            target.style.animation = 'none';
-            target.offsetHeight; /* trigger reflow */
-            target.style.animation = null; 
+
+            // Animação da barra de progresso (falsa)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 2;
+                if(progress > 100) progress = 100;
+                
+                progressBar.style.width = `${progress}%`;
+                progressText.innerText = `${Math.floor(progress)}%`;
+
+                if(progress === 100) {
+                    progressBar.classList.remove('bg-terminal-red');
+                    progressBar.classList.add('bg-green-500');
+                    clearInterval(interval);
+                }
+            }, 80); // Velocidade da barra
         }
 
-        function toggleSenha(inputId, btn) {
-            const input = document.getElementById(inputId);
-            const icon = btn.querySelector('span');
-            if (input.type === "password") {
-                input.type = "text"; icon.textContent = "visibility";
-            } else {
-                input.type = "password"; icon.textContent = "visibility_off";
-            }
-        }
-
-        function setLoading(btn, isLoading, contentHTML) {
-            if (isLoading) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Processando...';
-                btn.classList.add('opacity-70', 'cursor-not-allowed');
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = contentHTML;
-                btn.classList.remove('opacity-70', 'cursor-not-allowed');
-            }
-        }
-
-        function mostrarNotificacao(type, message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const color = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            
-            toast.className = `${color} text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-fade-in-up pointer-events-auto min-w-[300px]`;
-            toast.innerHTML = `<span class="material-symbols-outlined">${icon}</span><span class="font-medium text-sm">${message}</span>`;
-            
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
+        window.onload = runSequence;
     </script>
 </body>
 </html>
